@@ -83,9 +83,8 @@ def U(h):
     return (sparse.linalg.spsolve(A, F))
 
 
-# Função que plot os valores de referencia
+# Função que plota os valores de referência
 def plot_referencia(valores_referencia, m):
-    # Plotagem dos valores de referência
     x = range(1, m)
     y = range(1, m)
     X, Y = np.meshgrid(x, y)
@@ -100,7 +99,32 @@ def plot_referencia(valores_referencia, m):
     ax.set_ylabel('y')
     ax.set_zlabel('U')
 
+    # plt.show()
+    plt.savefig('resultados/ref.png')
 
+
+# Função que calcula as malhas
+def malhas_calc(h):
+    malhas = []
+
+    for i in h:
+        malhas.append(M(i))
+
+    return malhas
+
+
+# Função que calcula os valores_h
+def valores_h_calc(h):
+    valores_h = []
+
+    for i in h:
+        # [(U(i) != 0)&(U(i) != 1)])
+        valores_h.append(U(i))
+
+    return valores_h
+
+
+# Função que calcula o vetor de truncamento
 def truncamento_vet(h, h_barra, valores_referencia, valores_h):
     truncamento = []
     for t in range(0, len(h)):
@@ -128,6 +152,7 @@ def truncamento_vet(h, h_barra, valores_referencia, valores_h):
     return truncamento
 
 
+# Função que calcula o erro
 def erro_calc(truncamento):
     erro = []
     for i in truncamento:
@@ -136,10 +161,12 @@ def erro_calc(truncamento):
     return erro
 
 
+# Função que cria a tabela com os resultados
 def tabela_resultados(h, erro):
     print(pd.DataFrame({'h': h, 'Erro': erro}).to_latex(index=False))
 
 
+# Função que plota o gráfico de convergência
 def plot_convergencia(h, erro):
     fig = plt.figure(figsize=(10, 5))
     ax = fig.subplots()
@@ -148,26 +175,8 @@ def plot_convergencia(h, erro):
     ax.grid(color='green', linestyle='--', linewidth=0.5,)
     ax.set_xlabel('h')
     ax.set_ylabel('erro')
+
     for i, j in zip(h, erro):
         ax.annotate(str(j), xy=(i, j))
 
-    plt.show()
-
-
-def malhas_calc(h):
-    malhas = []
-
-    for i in h:
-        malhas.append(M(i))
-
-    return malhas
-
-
-def valores_h_calc(h):
-    valores_h = []
-
-    for i in h:
-        # [(U(i) != 0)&(U(i) != 1)])
-        valores_h.append(U(i))
-
-    return valores_h
+    plt.savefig('resultados/convergencia.png')
