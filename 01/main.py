@@ -1,24 +1,26 @@
 from functions import *
 
-# Cálculo da solução de referência
-h_barra = 1/256
-m = M(h_barra)
+# Intervalo
+a = -1
+b = 1
 
-# [(U(h) != 0)&(U(h) != 1)]
-valores_referencia = U(h_barra)
+# Cálculo da solução de referência
+h_ref = 1/256
+tam_malha = tamanho_malha(a, b, h_ref)
+
+valores_ref = aprox_u(a, b, h_ref)
 
 # Grafico dos valores de referencia
-plot_referencia(valores_referencia, m)
+plot_referencia(valores_ref, tam_malha)
 
 # Vetor dos valores de h
 h = [1/2, 1/4, 1/8, 1/64, 1/128]
 
 # Criação da malha e dos valores_h
-malhas = malhas_calc(h)
 valores_h = valores_h_calc(h)
 
 # Vetor dos truncamentos dos valores da malha analisada e da malha da solução de referência
-truncamento = truncamento_vet(h, h_barra, valores_referencia, valores_h)
+truncamento = truncamento_vet(a, b, h, h_ref, valores_ref, valores_h)
 
 # Calcula o erro
 erro = erro_calc(truncamento)
