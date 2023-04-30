@@ -26,6 +26,5 @@ erro = truncamento_vet(h, valores_ref, valores_h)
 # Gerando tabela de resultados
 tabela_resultados(h, erro)
 
-print(valores_h[0])
 # Plotagem da convergência do método
 plot_convergencia(h, erro)

@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
+from scipy.interpolate import CubicSpline
+from scipy.interpolate import interp1d
 
 
 def imprime_matriz(A):
@@ -85,8 +87,8 @@ def aprox_u(a, b, h, tam_malha, k_2):
 
     F = np.zeros((tam_malha**2, 1))
 
-    for i in range(tam_malha):
-        F[i] = np.sin(b + i*h)
+    for i in range(tam_malha+1):
+        F[i] = np.sin(a + i*h)
 
     F = sparse.csr_matrix(F)
 
@@ -96,12 +98,19 @@ def aprox_u(a, b, h, tam_malha, k_2):
 # Função que plota os valores de referência
 def plot_referencia(a, b, tam_malha, valores_ref):
     # Cria um conjunto de pontos na superfície
-    x = np.linspace(a, b, tam_malha)
-    y = np.linspace(a, b, tam_malha)
+    x = np.linspace(a, b, tam_malha*tam_malha)
+    y = np.linspace(a, b, tam_malha*tam_malha)
 
     X, Y = np.meshgrid(x, y)
 
-    Z = valores_ref
+    # Criamos a interpolacao
+    # Definindo os pontos a serem aproximados
+    x_spline = np.linspace(a, b, tam_malha*tam_malha)
+    y_spline = valores_ref
+    f = interp1d(x_spline, y_spline, kind='cubic')
+
+    # Criando a spline cúbica
+    Z = f(X)
 
     # Cria uma figura 3D
     fig = plt.figure()
