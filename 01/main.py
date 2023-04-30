@@ -3,30 +3,29 @@ from functions import *
 # Intervalo
 a = -1
 b = 1
+k_2 = 10
 
 # Cálculo da solução de referência
-h_ref = 1/256
+h_ref = 1/64
 tam_malha = tamanho_malha(a, b, h_ref)
 
-valores_ref = aprox_u(a, b, h_ref)
+valores_ref = aprox_u(a, b, h_ref, tam_malha, k_2)
 
 # Grafico dos valores de referencia
-plot_referencia(valores_ref, tam_malha)
+plot_referencia(a, b, tam_malha, valores_ref)
 
 # Vetor dos valores de h
-h = [1/2, 1/4, 1/8, 1/64, 1/128]
+h = [1/2, 1/4, 1/8]
 
 # Criação da malha e dos valores_h
-valores_h = valores_h_calc(h)
+valores_h = valores_h_calc(a, b, h, tam_malha, k_2)
 
 # Vetor dos truncamentos dos valores da malha analisada e da malha da solução de referência
-truncamento = truncamento_vet(a, b, h, h_ref, valores_ref, valores_h)
-
-# Calcula o erro
-erro = erro_calc(truncamento)
+erro = truncamento_vet(h, valores_ref, valores_h)
 
 # Gerando tabela de resultados
 tabela_resultados(h, erro)
 
+print(valores_h[0])
 # Plotagem da convergência do método
 plot_convergencia(h, erro)

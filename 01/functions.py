@@ -6,6 +6,29 @@ from scipy import sparse
 from scipy.sparse.linalg import spsolve
 
 
+def imprime_matriz(A):
+
+    try:
+        A = sparse.csr_matrix.todense(A)
+        A = pd.DataFrame(A)
+
+        pd.set_option('display.max_rows', None)
+        # determining the name of the file
+        file_name = 'matriz.xlsx'
+        # saving the excel
+        A.to_excel(file_name)
+    except:
+        A = pd.DataFrame(A)
+
+        pd.set_option('display.max_rows', None)
+        # determining the name of the file
+        file_name = 'matriz.xlsx'
+        # saving the excel
+        A.to_excel(file_name)
+
+    return
+
+
 # Função que dá o tamanho da malha de acordo com o tamanho de h escolhido
 def tamanho_malha(a, b, h):
     n = (b-a)/h + 1
@@ -13,105 +36,84 @@ def tamanho_malha(a, b, h):
     return int(n)
 
 
-def aprox_u(a, b, h):
-    n = tamanho_malha(a, b, h)
-    A = np.identity(n*n)
+def aprox_u(a, b, h, tam_malha, k_2):
+    # Matriz identidade
+    I = np.identity(tam_malha)
 
-    for i in range(n):
-        for j in range(n):
-            if (j == 0 and (i > 0 and i < n)):
-                A[i][j] = 3
+    # Matriz com condições de Dirichlet
+    D_h = np.identity(tam_malha)
 
-    return 1
+    # Matriz auxiliar 1
+    I_1 = np.identity(tam_malha)
+    I_1[0][0] = 0
+    I_1[-1][-1] = 0
 
+    # Matriz auxiliar 2
+    I_2 = np.zeros((tam_malha, tam_malha))
 
-# Função que calcula o valor aproximado da função nos pontos de discretização da malha
-# def aprox_u(a, b, h):
-#     # Tamanho da malha
-#     tam_malha = tamanho_malha(a, b, h)
+    # Matriz auxiliar 1
+    I_h = np.zeros((tam_malha, tam_malha))
+    I_h[0][0] = 1/h/h
+    I_h[-1][-1] = 1/h/h
+    I_h += I_1
 
-#     # Matriz identidade
-#     I = np.identity(tam_malha)
+    # Matriz T com condições de Neumann e com coeficientes do Método de diferenças finitas
+    T = np.zeros((tam_malha, tam_malha))
+    T[0][0] = (-(4-h))/(h*h) + k_2
+    T[-1][-1] = (-(4+h))/(h*h) + k_2
+    T[0][1] = 2/h/h
+    T[-1][-2] = 2/h/h
 
-#     # Matriz com condições de Dirichlet
-#     D_h = np.identity(tam_malha)*(h**2)
+    for i in range(1, tam_malha - 1):
+        T[i][i - 1] = 1/h/h
+        T[i][i] = (-4)/(h*h) + k_2
+        T[i][i + 1] = 1/h/h
 
-#     # Matriz auxiliar 1
-#     I_1 = np.identity(tam_malha)
-#     I_1[0][0] = 0
-#     I_1[-1][-1] = 0
+        I_2[i][i - 1] = 1
+        I_2[i][i + 1] = 1
 
-#     # Matriz auxiliar 2
-#     I_2 = np.zeros((tam_malha, tam_malha))
+    # Transformando as matrizes criadas em matrizes esparsas
+    I = sparse.csr_matrix(I)
+    I_1 = sparse.csr_matrix(I_1)
+    I_2 = sparse.csr_matrix(I_2)
+    T = sparse.csr_matrix(T)
+    D_h = sparse.csr_matrix(D_h)
 
-#     # Matriz auxiliar 1
-#     I_h = np.zeros((tam_malha, tam_malha))
-#     I_h[0][0] = h/2
-#     I_h[-1][-1] = h/2
-#     I_h += I_1
+    # Matriz A de resolução do problema linear (A linha)
+    A = sparse.kron((I - I_1), D_h) + sparse.kron(I_1, T) + \
+        sparse.kron(I_2, I_h)
 
-#     # Matriz T com condições de Neumann e com coeficientes do Método de diferenças finitas
-#     T = np.zeros((tam_malha, tam_malha))
-#     T[0][0] = -2*h
-#     T[-1][-1] = -2*h
-#     T[0][1] = h
-#     T[-1][-2] = h
+    F = np.zeros((tam_malha**2, 1))
 
-#     for i in range(1, tam_malha - 1):
-#         T[i][i - 1] = 1
-#         T[i][i] = -4
-#         T[i][i + 1] = 1
+    for i in range(tam_malha):
+        F[i] = np.sin(b + i*h)
 
-#         I_2[i][i - 1] = 1
-#         I_2[i][i + 1] = 1
+    F = sparse.csr_matrix(F)
 
-#     # Transformando as matrizes criadas em matrizes esparsas
-#     I = sparse.csr_matrix(I)
-#     I_1 = sparse.csr_matrix(I_1)
-#     I_2 = sparse.csr_matrix(I_2)
-#     T = sparse.csr_matrix(T)
-#     D_h = sparse.csr_matrix(D_h)
-
-#     # Matriz A de resolução do problema linear (A linha)
-#     A = sparse.kron((I - I_1), D_h) + sparse.kron(I_1, T) + \
-#         sparse.kron(I_2, I_h)
-#     A = (1/h**2)*A
-
-#     # Matriz auxiliar para a resolução do sistema linear
-#     aux = np.identity(tam_malha)*10
-#     aux[0][0] = (1/2)*(1 + 10*h)
-#     aux[-1][-1] = (1/2)*(1 + 10*h)
-#     aux = sparse.csr_matrix(aux)
-
-#     # Matriz B utilizada para isolar as incógnitas e resolver o sistema linear
-#     B = sparse.kron(I_1, aux)
-
-#     # Matriz A final para a resolução do sistema linear
-#     A = A - B
-
-#     F = np.zeros((tam_malha**2, 1))
-#     F[0: tam_malha] = 1
-
-#     F = sparse.csr_matrix(F)
-
-#     return (sparse.linalg.spsolve(A, F))
+    return (sparse.linalg.spsolve(A, F))
 
 
 # Função que plota os valores de referência
-def plot_referencia(valores_referencia, tam_malha):
-    x = range(1, tam_malha)
-    y = range(1, tam_malha)
+def plot_referencia(a, b, tam_malha, valores_ref):
+    # Cria um conjunto de pontos na superfície
+    x = np.linspace(a, b, tam_malha)
+    y = np.linspace(a, b, tam_malha)
+
     X, Y = np.meshgrid(x, y)
 
-    fig = plt.figure(figsize=(10, 10))
+    Z = valores_ref
+
+    # Cria uma figura 3D
+    fig = plt.figure()
     ax = plt.axes(projection='3d')
 
-    ax.plot_surface((2*X - tam_malha)/tam_malha, (2*Y - tam_malha)/tam_malha,
-                    valores_referencia[X + tam_malha*(Y - 1)], cmap='inferno')
-    ax.view_init(30, 45)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('U')
+    # Plota a superfície
+    ax.plot_surface(X, Y, Z, cmap='viridis')
+
+    # Configura os rótulos dos eixos
+    ax.set_xlabel('Eixo X')
+    ax.set_ylabel('Eixo Y')
+    ax.set_zlabel('Eixo Z')
 
     # plt.show()
     plt.savefig('resultados/ref.png')
@@ -128,50 +130,27 @@ def malhas_calc(a, b, h):
 
 
 # Função que calcula os valores_h
-def valores_h_calc(h):
+def valores_h_calc(a, b, h, tam_malha, k_2):
     valores_h = []
 
     for i in h:
-        valores_h.append(aprox_u(i))
+        valores_h.append(aprox_u(a, b, i, tam_malha, k_2))
 
     return valores_h
 
 
 # Função que calcula o vetor de truncamento
-def truncamento_vet(a, b, h, h_ref, valores_referencia, valores_h):
+def truncamento_vet(h, valores_referencia, valores_h):
     truncamento = []
-    for t in range(0, len(h)):
-        # Indice geral da malha refinada (Solução de referência)
-        k_barra = []
 
-        # Índice geral da malha analisada
-        k = []
+    for i in range(0, len(h)):
 
-        # Razão entre a divisão da malha analisada e da malha da solução de referência
-        q = h[t]/h_ref
+        erro = np.linalg.norm(
+            valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
 
-        for j in range(0, tamanho_malha(a, b, h[t]) + 2):
-            for i in range(0, tamanho_malha(a, b, h[t]) + 2):
-                k_barra.append(i*q + (tamanho_malha(a, b, h_ref) + 2)*j*q)
-                k.append(i + (tamanho_malha(a, b, h[t]) + 2)*j*q)
-
-        k_barra = np.array(k_barra)
-        k_barra = k_barra.astype(int)
-
-        # Variável auxiliar para retirar os zeros(Valores não calculados e sim dados pela condição de contorno de Dirichlet)
-        aux = abs(valores_referencia[k_barra] - valores_h[t])
-        truncamento.append(aux[aux != 0])
+        truncamento.append(erro)
 
     return truncamento
-
-
-# Função que calcula o erro
-def erro_calc(truncamento):
-    erro = []
-    for i in truncamento:
-        erro.append(i.max())
-
-    return erro
 
 
 # Função que cria a tabela com os resultados
@@ -181,15 +160,26 @@ def tabela_resultados(h, erro):
 
 # Função que plota o gráfico de convergência
 def plot_convergencia(h, erro):
-    fig = plt.figure(figsize=(10, 5))
-    ax = fig.subplots()
-    ax.plot(h, erro,  marker='o')
-    ax.loglog()
-    ax.grid(color='green', linestyle='--', linewidth=0.5,)
-    ax.set_xlabel('h')
-    ax.set_ylabel('erro')
+    # fig = plt.figure(figsize=(10, 5))
+    # ax = fig.subplots()
+    # ax.plot(h, erro,  marker='o')
+    # ax.loglog()
+    # ax.grid(color='green', linestyle='--', linewidth=0.5,)
+    # ax.set_xlabel('h')
+    # ax.set_ylabel('erro')
 
-    for i, j in zip(h, erro):
-        ax.annotate(str(j), xy=(i, j))
+    # for i, j in zip(h, erro):
+    #     ax.annotate(str(j), xy=(i, j))
+
+    # posicoes = [i+1 for i in range(len(h))]
+
+    # plt.figure(figsize=(8, 6))
+    # plt.scatter(posicoes, erro, c='red', marker='o', label='Pontos')
+    # plt.xlabel('H', fontdict={'fontsize': 14, 'fontweight': 'bold'})
+    # plt.ylabel('Erro', fontdict={
+    #            'fontsize': 14, 'fontweight': 'bold'})
+    # plt.title('Valor da Função Objetivo', fontdict={
+    #           'fontsize': 16, 'fontweight': 'bold'})
+    # plt.grid(color='gray', linestyle='--')
 
     plt.savefig('resultados/convergencia.png')
