@@ -40,7 +40,7 @@ def tamanho_malha(a, b, h):
     return int(n)
 
 
-def aprox_u(a, b, h, tam_malha, k_2):
+def aprox_u(a, h, tam_malha, k_2):
     # Matriz identidade
     I = np.identity(tam_malha)
 
