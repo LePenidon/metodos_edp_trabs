@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 from scipy.interpolate import CubicSpline
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp2d
+from scipy.interpolate import RegularGridInterpolator
 
 
 def imprime_matriz(A):
@@ -85,6 +86,17 @@ def aprox_u(a, b, h, tam_malha, k_2):
     A = sparse.kron((I - I_1), D_h) + sparse.kron(I_1, T) + \
         sparse.kron(I_2, I_h)
 
+    # Criar um DataFrame pandas a partir da matriz densa
+    df = pd.DataFrame(A.toarray())
+
+    # Configurar opções de exibição do pandas para mostrar toda a matriz
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
+
+    # Imprimir a matriz usando o método to_string()
+    # print(df.to_string(index=False, header=False))
+    np.savetxt('matriz.txt', df)
+
     F = np.zeros((tam_malha**2, 1))
 
     for i in range(tam_malha+1):
@@ -98,34 +110,37 @@ def aprox_u(a, b, h, tam_malha, k_2):
 # Função que plota os valores de referência
 def plot_referencia(a, b, tam_malha, valores_ref):
     # Cria um conjunto de pontos na superfície
-    x = np.linspace(a, b, tam_malha*tam_malha)
-    y = np.linspace(a, b, tam_malha*tam_malha)
+    x = np.linspace(a, b, tam_malha)
+    y = np.linspace(a, b, tam_malha)
+
+    # f = interp2d(x, y, valores_ref, kind='cubic')
+    # z = f(x, y)
+
+    z = valores_ref.reshape((tam_malha, tam_malha))
 
     X, Y = np.meshgrid(x, y)
 
-    # Criamos a interpolacao
-    # Definindo os pontos a serem aproximados
-    x_spline = np.linspace(a, b, tam_malha*tam_malha)
-    y_spline = valores_ref
-    f = interp1d(x_spline, y_spline, kind='cubic')
-
-    # Criando a spline cúbica
-    Z = f(X)
-
-    # Cria uma figura 3D
+    # Criando figura e eixos 3D
     fig = plt.figure()
-    ax = plt.axes(projection='3d')
+    ax = fig.add_subplot(111, projection='3d')
 
-    # Plota a superfície
-    ax.plot_surface(X, Y, Z, cmap='viridis')
+    # Plotando gráfico de superfície
+    surf = ax.plot_surface(X, Y, z, cmap=plt.cm.viridis,
+                           rcount=tam_malha, ccount=tam_malha)
 
-    # Configura os rótulos dos eixos
-    ax.set_xlabel('Eixo X')
-    ax.set_ylabel('Eixo Y')
-    ax.set_zlabel('Eixo Z')
+    # Configurando eixos e título
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('Gráfico de Superfície com Interpolação Cúbica')
 
-    # plt.show()
-    plt.savefig('resultados/ref.png')
+    # Adicionando barra de cores
+    fig.colorbar(surf)
+
+    plt.show()
+    # plt.savefig('resultados/ref.png')
+
+    return
 
 
 # Função que calcula as malhas
@@ -180,15 +195,21 @@ def plot_convergencia(h, erro):
     # for i, j in zip(h, erro):
     #     ax.annotate(str(j), xy=(i, j))
 
-    # posicoes = [i+1 for i in range(len(h))]
+    # ========================================
 
-    # plt.figure(figsize=(8, 6))
-    # plt.scatter(posicoes, erro, c='red', marker='o', label='Pontos')
-    # plt.xlabel('H', fontdict={'fontsize': 14, 'fontweight': 'bold'})
-    # plt.ylabel('Erro', fontdict={
-    #            'fontsize': 14, 'fontweight': 'bold'})
-    # plt.title('Valor da Função Objetivo', fontdict={
-    #           'fontsize': 16, 'fontweight': 'bold'})
-    # plt.grid(color='gray', linestyle='--')
+    # f = interp1d(posicoes, erro, kind='cubic')
+    print(erro)
+
+    f = CubicSpline(h, erro)
+    z = f(h)
+
+    plt.figure(figsize=(8, 6))
+    plt.scatter(h, z, c='red', marker='o', label='Pontos')
+    plt.xlabel('H', fontdict={'fontsize': 14, 'fontweight': 'bold'})
+    plt.ylabel('Erro', fontdict={
+               'fontsize': 14, 'fontweight': 'bold'})
+    plt.title('Valor da Função Objetivo', fontdict={
+              'fontsize': 16, 'fontweight': 'bold'})
+    plt.grid(color='gray', linestyle='--')
 
     plt.savefig('resultados/convergencia.png')
