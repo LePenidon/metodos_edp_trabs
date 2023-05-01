@@ -89,8 +89,6 @@ def aprox_u(a, b, h, tam_malha, k_2):
     A = sparse.kron((I - I_1), D_h) + sparse.kron(I_1, T) + \
         sparse.kron(I_2, I_h)
 
-    imprime_matriz(A)
-
     F = np.zeros((tam_malha**2, 1))
 
     for i in range(tam_malha+1):
@@ -128,8 +126,8 @@ def plot_referencia(a, b, tam_malha, valores_ref):
     # Adicionando barra de cores
     fig.colorbar(surf)
 
-    # plt.show()
-    plt.savefig('resultados/ref.png')
+    plt.show()
+    # plt.savefig('resultados/ref.png')
 
     return
 
