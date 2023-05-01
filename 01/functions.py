@@ -3,31 +3,32 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import sparse
-from scipy.sparse.linalg import spsolve
-from scipy.interpolate import CubicSpline
-from scipy.interpolate import interp2d
-from scipy.interpolate import RegularGridInterpolator
 
 
 def imprime_matriz(A):
+    format = "%.1f"
 
     try:
-        A = sparse.csr_matrix.todense(A)
-        A = pd.DataFrame(A)
+        # Criar um DataFrame pandas a partir da matriz densa
+        df = pd.DataFrame(A.toarray())
 
+        # Configurar opções de exibição do pandas para mostrar toda a matriz
+        pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)
-        # determining the name of the file
-        file_name = 'matriz.xlsx'
-        # saving the excel
-        A.to_excel(file_name)
+
+        # Imprimir a matriz usando o método to_string()
+        # print(df.to_string(index=False, header=False))
+        np.savetxt('matriz.txt', df, fmt=format)
     except:
-        A = pd.DataFrame(A)
+        df = pd.DataFrame(A)
 
+        # Configurar opções de exibição do pandas para mostrar toda a matriz
+        pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)
-        # determining the name of the file
-        file_name = 'matriz.xlsx'
-        # saving the excel
-        A.to_excel(file_name)
+
+        # Imprimir a matriz usando o método to_string()
+        # print(df.to_string(index=False, header=False))
+        np.savetxt('matriz.txt', df, fmt=format)
 
     return
 
@@ -55,10 +56,12 @@ def aprox_u(a, b, h, tam_malha, k_2):
     I_2 = np.zeros((tam_malha, tam_malha))
 
     # Matriz auxiliar 1
-    I_h = np.zeros((tam_malha, tam_malha))
-    I_h[0][0] = 1/h/h
-    I_h[-1][-1] = 1/h/h
-    I_h += I_1
+    # I_h = np.zeros((tam_malha, tam_malha))
+    # I_h[0][0] = 1/h/h
+    # I_h[-1][-1] = 1/h/h
+    # I_h += I_1
+
+    I_h = I*(1/h/h)
 
     # Matriz T com condições de Neumann e com coeficientes do Método de diferenças finitas
     T = np.zeros((tam_malha, tam_malha))
@@ -86,16 +89,7 @@ def aprox_u(a, b, h, tam_malha, k_2):
     A = sparse.kron((I - I_1), D_h) + sparse.kron(I_1, T) + \
         sparse.kron(I_2, I_h)
 
-    # Criar um DataFrame pandas a partir da matriz densa
-    df = pd.DataFrame(A.toarray())
-
-    # Configurar opções de exibição do pandas para mostrar toda a matriz
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-
-    # Imprimir a matriz usando o método to_string()
-    # print(df.to_string(index=False, header=False))
-    np.savetxt('matriz.txt', df)
+    imprime_matriz(A)
 
     F = np.zeros((tam_malha**2, 1))
 
@@ -112,9 +106,6 @@ def plot_referencia(a, b, tam_malha, valores_ref):
     # Cria um conjunto de pontos na superfície
     x = np.linspace(a, b, tam_malha)
     y = np.linspace(a, b, tam_malha)
-
-    # f = interp2d(x, y, valores_ref, kind='cubic')
-    # z = f(x, y)
 
     z = valores_ref.reshape((tam_malha, tam_malha))
 
@@ -137,8 +128,8 @@ def plot_referencia(a, b, tam_malha, valores_ref):
     # Adicionando barra de cores
     fig.colorbar(surf)
 
-    plt.show()
-    # plt.savefig('resultados/ref.png')
+    # plt.show()
+    plt.savefig('resultados/ref.png')
 
     return
 
@@ -169,10 +160,16 @@ def truncamento_vet(h, valores_referencia, valores_h):
 
     for i in range(0, len(h)):
 
-        erro = np.linalg.norm(
-            valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
+        erro_absoluto = np.abs(valores_referencia - valores_h[i])
+        norma_max = np.amax(np.abs(valores_referencia))
 
-        truncamento.append(erro)
+        # Cálculo do erro de aproximação relativo
+        erro_relativo = np.amax(erro_absoluto) / norma_max
+
+        # erro = np.linalg.norm(
+        #     valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
+
+        truncamento.append(erro_relativo)
 
     return truncamento
 
@@ -184,32 +181,15 @@ def tabela_resultados(h, erro):
 
 # Função que plota o gráfico de convergência
 def plot_convergencia(h, erro):
-    # fig = plt.figure(figsize=(10, 5))
-    # ax = fig.subplots()
-    # ax.plot(h, erro,  marker='o')
-    # ax.loglog()
-    # ax.grid(color='green', linestyle='--', linewidth=0.5,)
-    # ax.set_xlabel('h')
-    # ax.set_ylabel('erro')
 
-    # for i, j in zip(h, erro):
-    #     ax.annotate(str(j), xy=(i, j))
-
-    # ========================================
-
-    # f = interp1d(posicoes, erro, kind='cubic')
-    print(erro)
-
-    f = CubicSpline(h, erro)
-    z = f(h)
-
-    plt.figure(figsize=(8, 6))
-    plt.scatter(h, z, c='red', marker='o', label='Pontos')
+    plt.figure(figsize=(10, 7))
     plt.xlabel('H', fontdict={'fontsize': 14, 'fontweight': 'bold'})
     plt.ylabel('Erro', fontdict={
                'fontsize': 14, 'fontweight': 'bold'})
-    plt.title('Valor da Função Objetivo', fontdict={
+    plt.title('Erro/H', fontdict={
               'fontsize': 16, 'fontweight': 'bold'})
-    plt.grid(color='gray', linestyle='--')
+
+    # plt.plot(h, erro, c='red')
+    plt.loglog(h, erro, color='blue')
 
     plt.savefig('resultados/convergencia.png')
