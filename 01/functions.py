@@ -44,9 +44,6 @@ def aprox_u(a, h, tam_malha, k_2):
     # Matriz identidade
     I = np.identity(tam_malha)
 
-    # Matriz com condições de Dirichlet
-    D_h = np.identity(tam_malha)
-
     # Matriz auxiliar 1
     I_1 = np.identity(tam_malha)
     I_1[0][0] = 0
@@ -54,12 +51,6 @@ def aprox_u(a, h, tam_malha, k_2):
 
     # Matriz auxiliar 2
     I_2 = np.zeros((tam_malha, tam_malha))
-
-    # Matriz auxiliar 1
-    # I_h = np.zeros((tam_malha, tam_malha))
-    # I_h[0][0] = 1/h/h
-    # I_h[-1][-1] = 1/h/h
-    # I_h += I_1
 
     I_h = I*(1/h/h)
 
@@ -83,10 +74,9 @@ def aprox_u(a, h, tam_malha, k_2):
     I_1 = sparse.csr_matrix(I_1)
     I_2 = sparse.csr_matrix(I_2)
     T = sparse.csr_matrix(T)
-    D_h = sparse.csr_matrix(D_h)
 
     # Matriz A de resolução do problema linear (A linha)
-    A = sparse.kron((I - I_1), D_h) + sparse.kron(I_1, T) + \
+    A = sparse.kron((I - I_1), I) + sparse.kron(I_1, T) + \
         sparse.kron(I_2, I_h)
 
     F = np.zeros((tam_malha**2, 1))
@@ -121,13 +111,13 @@ def plot_referencia(a, b, tam_malha, valores_ref):
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    ax.set_title('Gráfico de Superfície com Interpolação Cúbica')
+    ax.set_title('Gráfico')
 
     # Adicionando barra de cores
     fig.colorbar(surf)
 
-    plt.show()
-    # plt.savefig('resultados/ref.png')
+    # plt.show()
+    plt.savefig('resultados/superficie_ref.png')
 
     return
 
@@ -143,17 +133,17 @@ def malhas_calc(a, b, h):
 
 
 # Função que calcula os valores_h
-def valores_h_calc(a, b, h, tam_malha, k_2):
+def valores_h_calc(a, h, tam_malha, k_2):
     valores_h = []
 
     for i in h:
-        valores_h.append(aprox_u(a, b, i, tam_malha, k_2))
+        valores_h.append(aprox_u(a, i, tam_malha, k_2))
 
     return valores_h
 
 
 # Função que calcula o vetor de truncamento
-def truncamento_vet(h, valores_referencia, valores_h):
+def erro_calc(h, valores_referencia, valores_h):
     truncamento = []
 
     for i in range(0, len(h)):
@@ -178,7 +168,7 @@ def tabela_resultados(h, erro):
 
 
 # Função que plota o gráfico de convergência
-def plot_convergencia(h, erro):
+def plot_erros(h, erro):
 
     plt.figure(figsize=(10, 7))
     plt.xlabel('H', fontdict={'fontsize': 14, 'fontweight': 'bold'})
@@ -190,4 +180,4 @@ def plot_convergencia(h, erro):
     # plt.plot(h, erro, c='red')
     plt.loglog(h, erro, color='blue')
 
-    plt.savefig('resultados/convergencia.png')
+    plt.savefig('resultados/erros_h.png')
