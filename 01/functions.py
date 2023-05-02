@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import sparse
+from scipy.interpolate import interp2d
+from scipy.interpolate import RectBivariateSpline
 
 
 def imprime_matriz(A):
@@ -42,27 +44,20 @@ def tamanho_malha(a, b, h):
 
 def aprox_u(a, h, tam_malha, k_2):
     # Matriz identidade
-    # I = np.identity(tam_malha)
     I = sparse.identity(tam_malha, format='lil')
 
     # Matriz auxiliar 1
-    # I_1 = np.identity(tam_malha)
     I_1 = sparse.identity(tam_malha, format='lil')
 
     I_1[0, 0] = 0
     I_1[-1, -1] = 0
 
     # Matriz auxiliar 2
-    # I_2 = np.zeros((tam_malha, tam_malha))
     I_2 = sparse.lil_matrix((tam_malha, tam_malha))
-
-    # Atribuir valor zero para todos os elementos da matriz
-    # I_2.data = [[0] * I_2.shape[1]] * I_2.shape[0]
 
     I_h = I*(1/h/h)
 
     # Matriz T com condições de Neumann e com coeficientes do Método de diferenças finitas
-    # T = np.zeros((tam_malha, tam_malha))
     T = sparse.lil_matrix((tam_malha, tam_malha))
 
     T[0, 0] = (-(4-h))/(h*h) + k_2
@@ -136,30 +131,39 @@ def malhas_calc(a, b, h):
 
 
 # Função que calcula os valores_h
-def valores_h_calc(a, h, tam_malha, k_2):
+def valores_h_calc(a, b, h, k_2):
     valores_h = []
 
     for i in h:
-        valores_h.append(aprox_u(a, i, tam_malha, k_2))
+        valores_h.append(aprox_u(a, i, tamanho_malha(a, b, i), k_2))
 
     return valores_h
 
 
 # Função que calcula o vetor de truncamento
-def erro_calc(h, valores_referencia, valores_h):
+def erro_calc(a, b, h, valores_ref, valores_h, tam_malha):
     erros = []
 
+    # Definição dos dados
+    x = np.linspace(a, b, tam_malha)
+    y = np.linspace(a, b, tam_malha)
+
+    # Interpolação por spline cúbica
+    f_ref = interp2d(x, y, valores_ref, kind='cubic')
+
     for i in range(0, len(h)):
+        x_h = np.linspace(a, b, tamanho_malha(a, b, h[i]))
+        y_h = np.linspace(a, b, tamanho_malha(a, b, h[i]))
 
-        # TENTATIVA 1
-        erro_absoluto = np.abs(valores_referencia - valores_h[i])
-        norma_max = np.amax(np.abs(valores_referencia))
+        # Interpolação por spline cúbica
+        f_h = interp2d(x_h, y_h, valores_h[i], kind='cubic')
 
-        erro_relativo = np.amax(erro_absoluto) / norma_max
+        # # Calculando o erro
+        erro_absoluto = np.abs(f_ref(x_h, y_h) - f_h(x_h, y_h))
 
-        # TENTATIVA 2
-        # erro_relativo = np.linalg.norm(
-        #     valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
+        # Calculando a norma máxima
+        norma_max = np.amax(np.abs(erro_absoluto))
+        erro_relativo = norma_max/np.amax(np.abs(f_ref(x_h, y_h)))
 
         erros.append(erro_relativo)
 
@@ -184,3 +188,5 @@ def plot_erros(h, erro):
     plt.loglog(h, erro, color='blue')
 
     plt.savefig('resultados/erros_h.png')
+
+    return
