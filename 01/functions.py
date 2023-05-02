@@ -144,22 +144,23 @@ def valores_h_calc(a, h, tam_malha, k_2):
 
 # Função que calcula o vetor de truncamento
 def erro_calc(h, valores_referencia, valores_h):
-    truncamento = []
+    erros = []
 
     for i in range(0, len(h)):
 
-        erro_absoluto = np.abs(valores_referencia - valores_h[i])
-        norma_max = np.amax(np.abs(valores_referencia))
+        # TENTATIVA 1
+        # erro_absoluto = np.abs(valores_referencia - valores_h[i])
+        # norma_max = np.amax(np.abs(valores_referencia))
 
-        # Cálculo do erro de aproximação relativo
-        erro_relativo = np.amax(erro_absoluto) / norma_max
+        # erro_relativo = np.amax(erro_absoluto) / norma_max
 
-        # erro = np.linalg.norm(
-        #     valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
+        # TENTATIVA 2
+        erro_relativo = np.linalg.norm(
+            valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
 
-        truncamento.append(erro_relativo)
+        erros.append(erro_relativo)
 
-    return truncamento
+    return erros
 
 
 # Função que cria a tabela com os resultados
