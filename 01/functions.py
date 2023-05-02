@@ -46,6 +46,7 @@ def aprox_u(a, h, tam_malha, k_2):
 
     # Matriz auxiliar 1
     I_1 = np.identity(tam_malha)
+
     I_1[0][0] = 0
     I_1[-1][-1] = 0
 
@@ -149,21 +150,20 @@ def erro_calc(h, valores_referencia, valores_h):
     for i in range(0, len(h)):
 
         # TENTATIVA 1
-        # erro_absoluto = np.abs(valores_referencia - valores_h[i])
-        # norma_max = np.amax(np.abs(valores_referencia))
+        erro_absoluto = np.abs(valores_referencia - valores_h[i])
+        norma_max = np.amax(np.abs(valores_referencia))
 
-        # erro_relativo = np.amax(erro_absoluto) / norma_max
+        erro_relativo = np.amax(erro_absoluto) / norma_max
 
         # TENTATIVA 2
-        erro_relativo = np.linalg.norm(
-            valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
+        # erro_relativo = np.linalg.norm(
+        #     valores_h[i] - valores_referencia)/np.linalg.norm(valores_referencia)
 
         erros.append(erro_relativo)
 
     return erros
 
 
-# Função que cria a tabela com os resultados
 def tabela_resultados(h, erro):
     print(pd.DataFrame({'h': h, 'Erro': erro}).to_latex(index=False))
 
