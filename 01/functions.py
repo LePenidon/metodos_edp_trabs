@@ -42,39 +42,41 @@ def tamanho_malha(a, b, h):
 
 def aprox_u(a, h, tam_malha, k_2):
     # Matriz identidade
-    I = np.identity(tam_malha)
+    # I = np.identity(tam_malha)
+    I = sparse.identity(tam_malha, format='lil')
 
     # Matriz auxiliar 1
-    I_1 = np.identity(tam_malha)
+    # I_1 = np.identity(tam_malha)
+    I_1 = sparse.identity(tam_malha, format='lil')
 
-    I_1[0][0] = 0
-    I_1[-1][-1] = 0
+    I_1[0, 0] = 0
+    I_1[-1, -1] = 0
 
     # Matriz auxiliar 2
-    I_2 = np.zeros((tam_malha, tam_malha))
+    # I_2 = np.zeros((tam_malha, tam_malha))
+    I_2 = sparse.lil_matrix((tam_malha, tam_malha))
+
+    # Atribuir valor zero para todos os elementos da matriz
+    # I_2.data = [[0] * I_2.shape[1]] * I_2.shape[0]
 
     I_h = I*(1/h/h)
 
     # Matriz T com condições de Neumann e com coeficientes do Método de diferenças finitas
-    T = np.zeros((tam_malha, tam_malha))
-    T[0][0] = (-(4-h))/(h*h) + k_2
-    T[-1][-1] = (-(4+h))/(h*h) + k_2
-    T[0][1] = 2/h/h
-    T[-1][-2] = 2/h/h
+    # T = np.zeros((tam_malha, tam_malha))
+    T = sparse.lil_matrix((tam_malha, tam_malha))
+
+    T[0, 0] = (-(4-h))/(h*h) + k_2
+    T[-1, -1] = (-(4+h))/(h*h) + k_2
+    T[0, 1] = 2/h/h
+    T[-1, -2] = 2/h/h
 
     for i in range(1, tam_malha - 1):
-        T[i][i - 1] = 1/h/h
-        T[i][i] = (-4)/(h*h) + k_2
-        T[i][i + 1] = 1/h/h
+        T[i, i - 1] = 1/h/h
+        T[i, i] = (-4)/(h*h) + k_2
+        T[i, i + 1] = 1/h/h
 
-        I_2[i][i - 1] = 1
-        I_2[i][i + 1] = 1
-
-    # Transformando as matrizes criadas em matrizes esparsas
-    I = sparse.csr_matrix(I)
-    I_1 = sparse.csr_matrix(I_1)
-    I_2 = sparse.csr_matrix(I_2)
-    T = sparse.csr_matrix(T)
+        I_2[i, i - 1] = 1
+        I_2[i, i + 1] = 1
 
     # Matriz A de resolução do problema linear (A linha)
     A = sparse.kron((I - I_1), I) + sparse.kron(I_1, T) + \

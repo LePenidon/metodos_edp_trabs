@@ -6,7 +6,7 @@ b = 1
 k_2 = 10
 
 # Cálculo da solução de referência
-h_ref = 1/2
+h_ref = 1/64
 tam_malha = tamanho_malha(a, b, h_ref)
 
 valores_ref = aprox_u(a, h_ref, tam_malha, k_2)
