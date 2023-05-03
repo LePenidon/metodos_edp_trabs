@@ -1,30 +1,26 @@
 from functions import *
 
-# Intervalo
+# Parametros do problema
 a = -1
 b = 1
 k_2 = 10
 
-# Cálculo da solução de referência
-h_ref = 1/128
+# Solucao da malha fina
+h_ref = 1/512
 tam_malha = tamanho_malha(a, b, h_ref)
-
 valores_ref = aprox_u(a, h_ref, tam_malha, k_2)
 
-# Grafico dos valores de referencia
+# Plot da solucao de referencia
 plot_referencia(a, b, tam_malha, valores_ref)
 
-# Vetor dos valores de h
-h = [1/64, 1/16, 1/8]
+# Valores de h a serem analisados
+h = [1/128, 1/64, 1/32, 1/16]
 
-# Criação da malha e dos valores_h
+# Resolucao dos valores de u para cada h
 valores_h = valores_h_calc(a, b, h, k_2)
 
-# Vetor dos truncamentos dos valores da malha analisada e da malha da solução de referência
+# Calculo dos erros
 erros = erro_calc(a, b, h, valores_ref, valores_h, tam_malha)
 
-# Gerando tabela de resultados
-# tabela_resultados(h, erro)
-
-# Plotagem da convergência do método
+# Plot dos erros
 plot_erros(h, erros)
