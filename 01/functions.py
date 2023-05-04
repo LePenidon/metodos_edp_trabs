@@ -77,14 +77,14 @@ def aprox_sol(a, h, tam_malha, k_2):
     A = sparse.kron((I - I_1), I) + sparse.kron(I_1, T) + sparse.kron(I_2, I_h)
 
     # Vetor B
-    B = np.zeros((tam_malha**2, 1))
+    F = np.zeros((tam_malha**2, 1))
     for i in range(tam_malha + 1):
-        B[i] = np.sin(a + i * h)
+        F[i] = np.sin(a + i * h)
 
-    B = sparse.csr_matrix(B)
+    F = sparse.csr_matrix(F)
 
     # Calcula a solução do sistema linear
-    return sparse.linalg.spsolve(A, B)
+    return sparse.linalg.spsolve(A, F)
 
 
 # Plota a superfície da aproximação da solução da EDP
