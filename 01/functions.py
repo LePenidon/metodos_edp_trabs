@@ -43,7 +43,7 @@ def tamanho_malha(a, b, h):
 
 
 # Calcula a aproximação da solução da EDP
-def aprox_u(a, h, tam_malha, k_2):
+def aprox_sol(a, h, tam_malha, k_2):
     # Matriz identidade
     I = sparse.identity(tam_malha, format="lil")
 
@@ -88,12 +88,12 @@ def aprox_u(a, h, tam_malha, k_2):
 
 
 # Plota a superfície da aproximação da solução da EDP
-def plot_referencia(a, b, tam_malha, valores_ref):
+def plot_referencia(a, b, tam_malha, sol_ref):
     # Discretização do domínio
     x = np.linspace(a, b, tam_malha)
     y = np.linspace(a, b, tam_malha)
 
-    z = valores_ref.reshape((tam_malha, tam_malha))
+    z = sol_ref.reshape((tam_malha, tam_malha))
 
     X, Y = np.meshgrid(x, y)
 
@@ -126,13 +126,13 @@ def valores_h_calc(a, b, h, k_2):
     valores_h = []
 
     for i in h:
-        valores_h.append(aprox_u(a, i, tamanho_malha(a, b, i), k_2))
+        valores_h.append(aprox_sol(a, i, tamanho_malha(a, b, i), k_2))
 
     return valores_h
 
 
 # Calcula o erro relativo a partir dos valores de referência e os valores aproximados
-def erro_calc(a, b, h, valores_ref, valores_h, tam_malha):
+def erro_calc(a, b, h, sol_ref, valores_h, tam_malha):
     erros = []
 
     # Definição dos dados
@@ -140,7 +140,7 @@ def erro_calc(a, b, h, valores_ref, valores_h, tam_malha):
     y = np.linspace(a, b, tam_malha)
 
     # Interpolação por spline cúbica
-    f_ref = interp2d(x, y, valores_ref, kind="cubic")
+    f_ref = interp2d(x, y, sol_ref, kind="cubic")
 
     for i in range(0, len(h)):
         # Discretização do domínio
