@@ -60,7 +60,7 @@ def aprox_sol(a, h, tam_malha, k_2):
     # Condicoes de Neumann e diferenças finitas
     T = sparse.lil_matrix((tam_malha, tam_malha))
     T[0, 0] = (-(4 - h)) / (h * h) + k_2
-    T[-1, -1] = (-(4 + h)) / (h * h) + k_2
+    T[-1, -1] = (-(4 - h)) / (h * h) + k_2
     T[0, 1] = 2 / h / h
     T[-1, -2] = 2 / h / h
 
@@ -75,7 +75,6 @@ def aprox_sol(a, h, tam_malha, k_2):
 
     # Matriz A
     A = sparse.kron((I - I_1), I) + sparse.kron(I_1, T) + sparse.kron(I_2, I_h)
-
     # Vetor B
     F = np.zeros((tam_malha**2, 1))
     for i in range(tam_malha + 1):
