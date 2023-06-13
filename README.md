@@ -5,3 +5,4 @@
 
 Feito com 💜 by
 - [Gabriel Penido](https://github.com/LePenidon)
+- [Bruno Borges](https://github.com/brunodfreiria)
