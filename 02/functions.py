@@ -1,10 +1,18 @@
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import sparse
-from scipy.interpolate import interp2d
 from scipy.special import ellipj
 from scipy.special import ellipk
+from scipy.optimize import newton
+import os
+
+
+def f(u, t):
+    u1, u2 = u
+    return np.array([u2, -np.sin(u1)])
+
+
+def f_jac(u, t):
+    return np.array([[0, 1], [-np.cos(u[0]), 0]])
 
 
 def RefSolution(q_0, t):
@@ -24,186 +32,166 @@ def RefSolution(q_0, t):
     # Angular velocity
     p = -2*k_0*cn
 
-    return q, p
+    u = np.array([q, p])
+
+    return u
 
 
-# Imprime a matriz em um arquivo txt
-def imprime_matriz(A):
-    format = "%.0f"
+def euler_explicito(f, t0, u0, h, num_passos):
+    # Lista para armazenar os valores de t
+    t = [t0]
+    # Lista para armazenar os valores de u
+    u = [u0]
 
-    try:
-        # Criar um DataFrame pandas a partir da matriz densa
-        df = pd.DataFrame(A.toarray())
+    for i in range(num_passos):
+        t_i = t[-1]
+        u_i = u[-1]
+        f_i = f(u_i, t_i)
+        # Cálculo do próximo valor de u usando o método de Euler explícito
+        u_prox = u_i + h * f_i
+        # Atualização do valor de t
+        t.append(t_i + h)
+        # Adição do próximo valor de u à lista
+        u.append(u_prox)
 
-        # Configurar opções de exibição do pandas para mostrar toda a matriz
-        pd.set_option("display.max_columns", None)
-        pd.set_option("display.max_rows", None)
-
-        # Imprimir a matriz usando o método to_string()
-        # print(df.to_string(index=False, header=False))
-        np.savetxt("matriz.txt", df, fmt=format)
-    except:
-        # Criar um DataFrame pandas a partir da matriz densa
-        df = pd.DataFrame(A)
-
-        # Configurar opções de exibição do pandas para mostrar toda a matriz
-        pd.set_option("display.max_columns", None)
-        pd.set_option("display.max_rows", None)
-
-        # Imprimir a matriz usando o método to_string()
-        # print(df.to_string(index=False, header=False))
-        np.savetxt("matriz.txt", df, fmt=format)
-
-    return
+    return t, u
 
 
-# Calcula o tamanho da malha
-def tamanho_malha(a, b, h):
-    n = (b - a) / h + 1
+def taylor_2(f, f_jac, t0, u0, h, num_passos):
+    t = [t0]  # Lista para armazenar os valores de t
+    u = [u0]  # Lista para armazenar os valores de u
 
-    return int(n)
+    for i in range(num_passos):
+        t_i = t[-1]
+        u_i = u[-1]
+        f_i = f(u_i, t_i)  # Calcula o vetor f(u_i, t_i)
+        f_jac_i = f_jac(u_i, t_i)  # Calcula a matriz Jacobiana df(u_i, t_i)
+        # Cálculo do próximo valor de u usando o método de Taylor de ordem 2
+        u_prox = u_i + h * f_i + h**2/2*(np.dot(f_jac_i, f_i))
+        # Atualização do valor de t
+        t.append(t_i + h)
+        # Adição do próximo valor de u à lista
+        u.append(u_prox)
 
-
-# Calcula a aproximação da solução da EDP
-def aprox_sol(a, h, tam_malha, k_2):
-    # Matriz identidade
-    I = sparse.identity(tam_malha, format="lil")
-
-    # Matriz auxiliar
-    I_1 = sparse.identity(tam_malha, format="lil")
-    I_1[0, 0] = 0
-    I_1[-1, -1] = 0
-
-    # Matriz auxiliar
-    I_2 = sparse.lil_matrix((tam_malha, tam_malha))
-
-    I_h = I * (1 / h / h)
-
-    # Condicoes de Neumann e diferenças finitas
-    T = sparse.lil_matrix((tam_malha, tam_malha))
-    T[0, 0] = (-(4 - h)) / (h * h) + k_2
-    T[-1, -1] = (-(4 - h)) / (h * h) + k_2
-    T[0, 1] = 2 / h / h
-    T[-1, -2] = 2 / h / h
-
-    # Condicoes de Dirichlet e diferenças finitas
-    for i in range(1, tam_malha - 1):
-        T[i, i - 1] = 1 / h / h
-        T[i, i] = (-4) / (h * h) + k_2
-        T[i, i + 1] = 1 / h / h
-
-        I_2[i, i - 1] = 1
-        I_2[i, i + 1] = 1
-
-    # Matriz A
-    A = sparse.kron((I - I_1), I) + sparse.kron(I_1, T) + sparse.kron(I_2, I_h)
-    # Vetor B
-    F = np.zeros((tam_malha**2, 1))
-    for i in range(tam_malha + 1):
-        F[i] = np.sin(a + i * h)
-
-    F = sparse.csr_matrix(F)
-
-    # Calcula a solução do sistema linear
-    return sparse.linalg.spsolve(A, F)
+    return t, u
 
 
-# Plota a superfície da aproximação da solução da EDP
-def plot_referencia(a, b, tam_malha, sol_ref):
-    # Discretização do domínio
-    x = np.linspace(a, b, tam_malha)
-    y = np.linspace(a, b, tam_malha)
+def adams_bashforth2(f, t0, u0, h, num_passos):
+    t = [t0]  # Lista para armazenar os valores de t
+    u = [u0]  # Lista para armazenar os valores de u
 
-    z = sol_ref.reshape((tam_malha, tam_malha))
+    # Inicialização usando o método de Euler explícito
+    t_i = t0
+    u_i = u0
+    f_i = f(u_i, t_i)
+    t_prox = t_i + h
+    u_prox_pred = u_i + h * f_i
+    t.append(t_prox)
+    u.append(u_prox_pred)
 
-    X, Y = np.meshgrid(x, y)
+    for i in range(2, num_passos + 1):
+        t_i = t_prox
+        u_i = u_prox_pred
+        f_i = f(u_i, t_i)
 
-    # Criando figura e eixos 3D
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
+        t_prox = t_i + h
+        u_prox_corr = u_i + (h / 2) * (3 * f_i - f(u[i-1], t[i-1]))
 
-    # Plotando gráfico de superfície
-    surf = ax.plot_surface(
-        X, Y, z, cmap=plt.cm.ocean, rcount=tam_malha, ccount=tam_malha
-    )
+        t.append(t_prox)
+        u.append(u_prox_corr)
 
-    # Configurando eixos e título
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
-    ax.set_title("Aproximação da solução da EDP")
-
-    # Adicionando barra de cores
-    fig.colorbar(surf)
-
-    # Mostrando o gráfico
-    plt.savefig("resultados/superficie_ref.png")
-
-    return
+    return t, u
 
 
-# Calcula para cada h a aproximação da solução da EDP
-def valores_h_calc(a, b, h, k_2):
-    valores_h = []
+def euler_implicito(f, t0, u0, h, num_passos):
+    t = [t0]  # Lista para armazenar os valores de t
+    u = [u0]  # Lista para armazenar os valores de u
 
-    for i in h:
-        valores_h.append(aprox_sol(a, i, tamanho_malha(a, b, i), k_2))
+    for i in range(num_passos):
+        t_i = t[-1]
+        u_i = u[-1]
+        def f_i(u_prox): return u_prox - u_i - h * f(u_prox, t_i + h)
+        # Usando o método de Newton para encontrar u_{i+1}
+        u_prox = newton(f_i, u_i)
+        t.append(t_i + h)
+        u.append(u_prox)
 
-    return valores_h
-
-
-# Calcula o erro relativo a partir dos valores de referência e os valores aproximados
-def erro_calc(a, b, h, sol_ref, valores_h, tam_malha):
-    erros = []
-
-    # Definição dos dados
-    x = np.linspace(a, b, tam_malha)
-    y = np.linspace(a, b, tam_malha)
-
-    # Interpolação por spline cúbica
-    f_ref = interp2d(x, y, sol_ref, kind="cubic")
-
-    for i in range(0, len(h)):
-        # Discretização do domínio
-        x_h = np.linspace(a, b, tamanho_malha(a, b, h[i]))
-        y_h = np.linspace(a, b, tamanho_malha(a, b, h[i]))
-
-        # Interpolação por spline cúbica
-        f_h = interp2d(x_h, y_h, valores_h[i], kind="cubic")
-
-        # # Calculando o erro
-        erro_absoluto = np.abs(f_ref(x_h, y_h) - f_h(x_h, y_h))
-
-        # Calculando a norma máxima
-        norma_max = np.amax(np.abs(erro_absoluto))
-
-        # Calculando o erro relativo
-        erro_relativo = norma_max / np.amax(np.abs(f_ref(x_h, y_h)))
-
-        erros.append(erro_relativo)
-
-    return erros
+    return t, u
 
 
-# Plota o erro relativo em função de h
-def plot_erros(h, erro):
-    # PLotando o gráfico
-    plt.figure(figsize=(10, 7))
-    plt.xlabel("H", fontdict={"fontsize": 14, "fontweight": "bold"})
-    plt.ylabel("Erro", fontdict={"fontsize": 14, "fontweight": "bold"})
-    plt.title(
-        "Erro/H (escala logXlog)", fontdict={"fontsize": 16, "fontweight": "bold"}
-    )
+def preditor_corretor(f, t0, u0, h, num_passos):
+    t = [t0]  # Lista para armazenar os valores de t
+    u = [u0]  # Lista para armazenar os valores de u
 
-    plt.loglog(h, erro, color="blue", label="Tamanho do H")
+    for i in range(num_passos):
+        t_i = t[-1]
+        u_i = u[-1]
 
-    # Plotando a parábola de referência
-    quadrados = np.array(h) ** 2
-    plt.loglog(h, quadrados, "--", color="red", label="Parábola de referência")
+        # Preditor (Euler Explícito)
+        u_pred = u_i + h * f(u_i, t_i)
 
+        # Corretor (Método do Trapézio)
+        f_pred = f(u_pred, t_i + h)
+        u_corr = u_i + (h / 2) * (f(u_i, t_i) + f_pred)
+
+        t.append(t_i + h)
+        u.append(u_corr)
+
+    return t, u
+
+
+def plot_vel_pos(u, t, titulo):
+    # Extrair os valores de u1 e u2
+    u1_vals = [u[0] for u in u]
+    u2_vals = [u[1] for u in u]
+
+    # Plotar o gráfico de u1(t) e u2(t) no mesmo gráfico
+    plt.figure(figsize=(10, 6))
+    plt.plot(t, u1_vals, 'b-', label='Posição Angular (u1)')
+    plt.plot(t, u2_vals, 'r-', label='Velocidade Angular (u2)')
+    plt.xlabel('Tempo (t)')
+    plt.ylabel('Valor')
     plt.legend()
+    plt.legend(loc='upper right', bbox_to_anchor=(
+        1, 1.14), fancybox=True, shadow=True)
+    plt.title(titulo)
 
-    # Salvando o gráfico
-    plt.savefig("resultados/erros_h.png")
+    # Salvar o gráfico como uma imagem
+    if not os.path.exists('graficos_plot_vel_pos'):
+        os.makedirs('graficos_plot_vel_pos')
+    plt.savefig('graficos_plot_vel_pos/' + titulo + '.png')
 
-    return
+
+def calculate_error(y_exact, y_approx):
+    """
+    Calcula o erro absoluto entre a solução exata e a solução aproximada.
+
+    Args:
+        y_exact: Lista contendo os valores exatos da solução.
+        y_approx: Lista contendo os valores aproximados da solução.
+
+    Returns:
+        Lista contendo os valores do erro absoluto.
+    """
+    return np.abs(y_exact - y_approx)
+
+
+def plot_convergence_order(errors, step_sizes):
+    """
+    Plota o gráfico do logaritmo do erro em função do logaritmo do tamanho do passo.
+
+    Args:
+        errors: Lista contendo os valores do erro absoluto.
+        step_sizes: Lista contendo os tamanhos do passo correspondentes.
+
+    Returns:
+        None
+    """
+    plt.loglog(step_sizes, errors, 'o-', label='Erro')
+
+    # Ajusta a escala do gráfico
+    plt.xlabel('Tamanho do Passo (h)')
+    plt.ylabel('Erro Absoluto')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
