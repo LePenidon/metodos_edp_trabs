@@ -13,9 +13,7 @@ tf = t0 + h*num_passos
 metodos = Metodos(t0, u0, h, num_passos, tf)
 
 
-# # Solução exata
-
-
+# Solução exata
 metodos.print_resultados()
 
 # # Parâmetros da simulação
