@@ -8,21 +8,34 @@ import os
 
 class Metodos:
 
-    def __init__(self, t0, u0, h, num_passos, tf):
+    def __init__(self, t0, u0, h, num_passos):
         self.t0 = t0
         self.u0 = u0
         self.h = h
         self.num_passos = num_passos
-        self.tf = tf
+        self.tf = t0 + h*num_passos
 
         self.u_ref = self.sol_referencia()
 
         self.u_ref = self.sol_referencia()
-        self.t_euler_e, self.u_euler_e = self.euler_explicito()
-        self.t_taylor_2, self.u_taylor_2 = self.taylor_2()
-        self.t_AB_2, self.u_AB_2 = self.adams_bashforth2()
-        self.t_euler_i, self.u_euler_i = self.euler_implicito()
-        self.t_PC, self.u_PC = self.preditor_corretor()
+
+        self.t_euler_e, self.u_euler_e = self.euler_explicito(
+            t0, u0, h, num_passos)
+        self.t_taylor_2, self.u_taylor_2 = self.taylor_2(t0, u0, h, num_passos)
+        self.t_AB_2, self.u_AB_2 = self.adams_bashforth2(t0, u0, h, num_passos)
+        self.t_euler_i, self.u_euler_i = self.euler_implicito(
+            t0, u0, h, num_passos)
+        self.t_PC, self.u_PC = self.preditor_corretor(t0, u0, h, num_passos)
+
+        self.metodos_lista_nomes = ["euler_explicito", "taylor_2",
+                                    "adams_bashforth2", "euler_implicito", "preditor_corretor"]
+        self.metodos_lista = [self.euler_explicito, self.taylor_2,
+                              self.adams_bashforth2, self.euler_implicito, self.preditor_corretor]
+
+        for i in range(len(self.metodos_lista)):
+            self.plot_vel_pos(self.metodos_lista_nomes[i])
+            self.erros_metodos(
+                self.metodos_lista[i], self.metodos_lista_nomes[i])
 
         return
 
@@ -114,173 +127,101 @@ class Metodos:
 
         return u
 
-    def euler_explicito(self):
-        """
-        Implementa o método de Euler explícito para resolver o sistema de equações diferenciais.
-
-        Returns:
-            tuple: Tupla contendo duas listas: a primeira com os valores de t e a segunda com os valores de u.
-
-        Example:
-            >>> obj = MyClass()
-            >>> obj.t0 = 0.0
-            >>> obj.u0 = [0.5, 1.0]
-            >>> obj.num_passos = 100
-            >>> obj.h = 0.01
-            >>> obj.euler_explicito()
-            ([0.0, 0.01, 0.02, ..., 0.99, 1.0], [[0.5, 1.0], [0.50734552, 0.99500417], [0.51469103, 0.9900167], ..., [3.00572984, -0.16038433], [3.00622291, -0.15942448]])
-        """
-
+    def euler_explicito(self, t0, u0, h, num_passos):
         # Lista para armazenar os valores de t
-        t = [self.t0]
+        t = [t0]
         # Lista para armazenar os valores de u
-        u = [self.u0]
+        u = [u0]
 
-        for i in range(self.num_passos):
+        for i in range(num_passos):
             t_i = t[-1]
             u_i = u[-1]
             f_i = self.f(u_i, t_i)
             # Cálculo do próximo valor de u usando o método de Euler explícito
-            u_prox = u_i + self.h * f_i
+            u_prox = u_i + h * f_i
             # Atualização do valor de t
-            t.append(t_i + self.h)
+            t.append(t_i + h)
             # Adição do próximo valor de u à lista
             u.append(u_prox)
 
         return t, u
 
-    def taylor_2(self):
-        """
-        Implementa o método de Taylor de ordem 2 para resolver o sistema de equações diferenciais.
+    def taylor_2(self, t0, u0, h, num_passos):
+        t = [t0]  # Lista para armazenar os valores de t
+        u = [u0]  # Lista para armazenar os valores de u
 
-        Returns:
-            tuple: Tupla contendo duas listas: a primeira com os valores de t e a segunda com os valores de u.
-
-        Example:
-            >>> obj = MyClass()
-            >>> obj.t0 = 0.0
-            >>> obj.u0 = [0.5, 1.0]
-            >>> obj.num_passos = 100
-            >>> obj.h = 0.01
-            >>> obj.taylor_2()
-            ([0.0, 0.01, 0.02, ..., 0.99, 1.0], [[0.5, 1.0], [0.50749998, 0.99500417], [0.51499997, 0.99001666], ..., [3.00624963, -0.16035661], [3.00624962, -0.1603566]])
-        """
-        t = [self.t0]  # Lista para armazenar os valores de t
-        u = [self.u0]  # Lista para armazenar os valores de u
-
-        for i in range(self.num_passos):
+        for i in range(num_passos):
             t_i = t[-1]
             u_i = u[-1]
             f_i = self.f(u_i, t_i)  # Calcula o vetor f(u_i, t_i)
             # Calcula a matriz Jacobiana df(u_i, t_i)
             f_jac_i = self.f_jac(u_i, t_i)
             # Cálculo do próximo valor de u usando o método de Taylor de ordem 2
-            u_prox = u_i + self.h * f_i + self.h**2 / 2 * np.dot(f_jac_i, f_i)
+            u_prox = u_i + h * f_i + h**2/2*(np.dot(f_jac_i, f_i))
             # Atualização do valor de t
-            t.append(t_i + self.h)
+            t.append(t_i + h)
             # Adição do próximo valor de u à lista
             u.append(u_prox)
 
         return t, u
 
-    def adams_bashforth2(self):
-        """
-        Implementa o método de Adams-Bashforth de ordem 2 para resolver o sistema de equações diferenciais.
-
-        Returns:
-            tuple: Tupla contendo duas listas: a primeira com os valores de t e a segunda com os valores de u.
-
-        Example:
-            >>> obj = MyClass()
-            >>> obj.t0 = 0.0
-            >>> obj.u0 = [0.5, 1.0]
-            >>> obj.num_passos = 100
-            >>> obj.h = 0.01
-            >>> obj.adams_bashforth2()
-            ([0.0, 0.01, 0.02, ..., 0.99, 1.0], [[0.5, 1.0], [0.50749998, 0.99500417], [0.51500832, 0.99001496], ..., [3.00625044, -0.1603594], [3.00625225, -0.16035942]])
-        """
-
-        # Lista para armazenar os valores de t
-        t = [self.t0]
-        # Lista para armazenar os valores de u
-        u = [self.u0]
+    def adams_bashforth2(self, t0, u0, h, num_passos):
+        t = [t0]  # Lista para armazenar os valores de t
+        u = [u0]  # Lista para armazenar os valores de u
 
         # Inicialização usando o método de Euler explícito
-        t_i = self.t0
-        u_i = self.u0
+        t_i = t0
+        u_i = u0
         f_i = self.f(u_i, t_i)
-        t_prox = t_i + self.h
-        u_prox_pred = u_i + self.h * f_i
+        t_prox = t_i + h
+        u_prox_pred = u_i + h * f_i
         t.append(t_prox)
         u.append(u_prox_pred)
 
-        for i in range(2, self.num_passos + 1):
+        for i in range(2, num_passos + 1):
             t_i = t_prox
             u_i = u_prox_pred
             f_i = self.f(u_i, t_i)
 
-            t_prox = t_i + self.h
-            u_prox_corr = u_i + (self.h / 2) * \
-                (3 * f_i - self.f(u[i-1], t[i-1]))
-            # u_prox_corr = u_i + (self.h / 2) * (3 * f_i - self.f(u_i, t_i))
+            t_prox = t_i + h
+            u_prox_corr = u_i + (h / 2) * (3 * f_i - self.f(u[i-1], t[i-1]))
 
             t.append(t_prox)
             u.append(u_prox_corr)
 
         return t, u
 
-    def euler_implicito(self):
-        """
-        Implementa o método de Euler implícito para resolver o sistema de equações diferenciais.
+    def euler_implicito(self, t0, u0, h, num_passos):
+        t = [t0]  # Lista para armazenar os valores de t
+        u = [u0]  # Lista para armazenar os valores de u
 
-        Returns:
-            tuple: Tupla contendo duas listas: a primeira com os valores de t e a segunda com os valores de u.
-
-        Example:
-            >>> obj = MyClass()
-            >>> obj.t0 = 0.0
-            >>> obj.u0 = [0.5, 1.0]
-            >>> obj.num_passos = 100
-            >>> obj.h = 0.01
-            >>> obj.euler_implicito()
-            ([0.0, 0.01, 0.02, ..., 0.99, 1.0], [[0.5, 1.0], [0.50166713, 0.99983351], [0.50333427, 0.99966701], ..., [2.234987, -0.423314], [2.2336457, -0.4243009]])
-        """
-        t = [self.t0]  # Lista para armazenar os valores de t
-        u = [self.u0]  # Lista para armazenar os valores de u
-
-        for i in range(self.num_passos):
+        for i in range(num_passos):
             t_i = t[-1]
             u_i = u[-1]
-
-            def f_i(u_prox):
-                return u_prox - u_i - self.h * self.f(u_prox, t_i + self.h)
-
+            def f_i(u_prox): return u_prox - u_i - h * self.f(u_prox, t_i + h)
             # Usando o método de Newton para encontrar u_{i+1}
             u_prox = newton(f_i, u_i)
-
-            t.append(t_i + self.h)
+            t.append(t_i + h)
             u.append(u_prox)
 
         return t, u
 
-    def preditor_corretor(self):
-        # Lista para armazenar os valores de t
-        t = [self.t0]
-        # Lista para armazenar os valores de u
-        u = [self.u0]
+    def preditor_corretor(self, t0, u0, h, num_passos):
+        t = [t0]  # Lista para armazenar os valores de t
+        u = [u0]  # Lista para armazenar os valores de u
 
-        for i in range(self.num_passos):
+        for i in range(num_passos):
             t_i = t[-1]
             u_i = u[-1]
 
             # Preditor (Euler Explícito)
-            u_pred = u_i + self.h * self.f(u_i, t_i)
+            u_pred = u_i + h * self.f(u_i, t_i)
 
             # Corretor (Método do Trapézio)
-            f_pred = self.f(u_pred, t_i + self.h)
-            u_corr = u_i + (self.h / 2) * (self.f(u_i, t_i) + f_pred)
+            f_pred = self.f(u_pred, t_i + h)
+            u_corr = u_i + (h / 2) * (self.f(u_i, t_i) + f_pred)
 
-            t.append(t_i + self.h)
+            t.append(t_i + h)
             u.append(u_corr)
 
         return t, u
@@ -319,7 +260,7 @@ class Metodos:
 
         return
 
-    def plot_vel_pos(u, t, titulo):
+    def plot_vel_pos(self, titulo):
         """
         Gera um gráfico com a posição angular (u1) e a velocidade angular (u2) em função do tempo (t).
 
@@ -338,8 +279,27 @@ class Metodos:
             >>> plot_vel_pos(u, t, titulo)
         """
         # Extrair os valores de u1 e u2
-        u1_vals = [u[0] for u in u]
-        u2_vals = [u[1] for u in u]
+
+        if titulo == "euler_explicito":
+            u1_vals = [u[0] for u in self.u_euler_e]
+            u2_vals = [u[1] for u in self.u_euler_e]
+            t = self.t_euler_e
+        elif titulo == "taylor_2":
+            u1_vals = [u[0] for u in self.u_taylor_2]
+            u2_vals = [u[1] for u in self.u_taylor_2]
+            t = self.t_taylor_2
+        elif titulo == "adams_bashforth2":
+            u1_vals = [u[0] for u in self.u_AB_2]
+            u2_vals = [u[1] for u in self.u_AB_2]
+            t = self.t_AB_2
+        elif titulo == "euler_implicito":
+            u1_vals = [u[0] for u in self.u_euler_i]
+            u2_vals = [u[1] for u in self.u_euler_i]
+            t = self.t_euler_i
+        elif titulo == "preditor_corretor":
+            u1_vals = [u[0] for u in self.u_PC]
+            u2_vals = [u[1] for u in self.u_PC]
+            t = self.t_PC
 
         # Plotar o gráfico de u1(t) e u2(t) no mesmo gráfico
         plt.figure(figsize=(10, 6))
@@ -353,13 +313,39 @@ class Metodos:
         plt.title(titulo)
 
         # Salvar o gráfico como uma imagem
-        if not os.path.exists('graficos_plot_vel_pos'):
-            os.makedirs('graficos_plot_vel_pos')
-        plt.savefig('graficos_plot_vel_pos/' + titulo + '.png')
+        if not os.path.exists('graficos_vel_pos'):
+            os.makedirs('graficos_vel_pos')
+        plt.savefig('graficos_vel_pos/' + titulo + '.png')
+
+        plt.close()
 
         return None
 
-    def calculate_error(y_exact, y_approx):
+    def erros_metodos(self, metodo, titulo):
+        # Parâmetros da simulação
+        h_values = [0.01, 0.005, 0.0025, 0.00125, 0.000625]
+
+        # Cálculo e plotagem da ordem de convergência temporal para o método de Euler explícito
+        error_list = []
+        for h in h_values:
+            t, u = metodo(self.t0, self.u0, h, self.num_passos)
+            error = self.calculate_error(self.u_ref, u)
+            error_list.append(error)
+
+        # Plotagem do gráfico de convergência do erro de aproximação
+        plt.loglog(h_values, error_list, '-o')
+        plt.xlabel('Tamanho do Passo (h)')
+        plt.ylabel('Erro de Aproximação')
+        plt.title('Gráfico de Convergência do Erro - ' + titulo)
+
+        if not os.path.exists('graficos_erros'):
+            os.makedirs('graficos_erros')
+        plt.savefig('graficos_erros/' + titulo + '.png')
+        plt.close()
+
+        return None
+
+    def calculate_error(self, y_exact, y_approx):
         """
         Calcula o erro absoluto entre a solução exata e a solução aproximada.
 
@@ -370,7 +356,7 @@ class Metodos:
         Returns:
             Lista contendo os valores do erro absoluto.
         """
-        return np.abs(y_exact - y_approx)
+        return np.linalg.norm(y_exact - y_approx)
 
     def plot_convergence_order(errors, step_sizes):
         """
