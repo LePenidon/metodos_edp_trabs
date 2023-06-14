@@ -8,6 +8,7 @@ u0 = np.array([np.pi/4, 0])
 h = 0.1
 # Número de passos
 num_passos = 300
+# Tempo final
 tf = t0 + h*num_passos
 
 metodos = Metodos(t0, u0, h, num_passos, tf)

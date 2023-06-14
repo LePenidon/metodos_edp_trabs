@@ -8,7 +8,7 @@ import os
 
 class Metodos:
 
-    def __init__(self, t0, u0, h, num_passos, tf) -> None:
+    def __init__(self, t0, u0, h, num_passos, tf):
         self.t0 = t0
         self.u0 = u0
         self.h = h
@@ -24,7 +24,7 @@ class Metodos:
         self.t_euler_i, self.u_euler_i = self.euler_implicito()
         self.t_PC, self.u_PC = self.preditor_corretor()
 
-        return None
+        return
 
     def f(self, u, t):
         """
