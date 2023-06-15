@@ -32,10 +32,10 @@ class Metodos:
 
         # self.tempos_execucao()
 
-        # for i in self.metodos_dict.keys():
-        #     self.plot_vel_pos(i)
-        #     self.erros_metodos(self.metodos_dict[i], i)
-        #     self.plot_grafico_fase(self.metodos_dict[i], i)
+        for i in self.metodos_dict.keys():
+            self.plot_vel_pos(i)
+            self.erros_metodos(self.metodos_dict[i], i)
+            self.plot_grafico_fase(self.metodos_dict[i], i)
 
         return
 
@@ -420,6 +420,3 @@ class Metodos:
         plt.close()
 
         return
-
-    def cuzinho():
-        pass
