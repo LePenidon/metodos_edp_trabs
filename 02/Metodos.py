@@ -4,6 +4,7 @@ from scipy.special import ellipj
 from scipy.special import ellipk
 from scipy.optimize import newton
 import os
+import time
 
 
 class Metodos:
@@ -17,8 +18,6 @@ class Metodos:
 
         self.u_ref = self.sol_referencia()
 
-        self.u_ref = self.sol_referencia()
-
         self.t_euler_e, self.u_euler_e = self.euler_explicito(
             t0, u0, h, num_passos)
         self.t_taylor_2, self.u_taylor_2 = self.taylor_2(t0, u0, h, num_passos)
@@ -27,15 +26,16 @@ class Metodos:
             t0, u0, h, num_passos)
         self.t_PC, self.u_PC = self.preditor_corretor(t0, u0, h, num_passos)
 
-        self.metodos_lista_nomes = ["euler_explicito", "taylor_2",
-                                    "adams_bashforth2", "euler_implicito", "preditor_corretor"]
-        self.metodos_lista = [self.euler_explicito, self.taylor_2,
-                              self.adams_bashforth2, self.euler_implicito, self.preditor_corretor]
+        self.metodos_dict = {"euler_explicito": self.euler_explicito, "taylor_2": self.taylor_2,
+                             "adams_bashforth2": self.adams_bashforth2, "euler_implicito": self.euler_implicito,
+                             "preditor_corretor": self.preditor_corretor}
 
-        for i in range(len(self.metodos_lista)):
-            self.plot_vel_pos(self.metodos_lista_nomes[i])
-            self.erros_metodos(
-                self.metodos_lista[i], self.metodos_lista_nomes[i])
+        # self.tempos_execucao()
+
+        # for i in self.metodos_dict.keys():
+        #     self.plot_vel_pos(i)
+        #     self.erros_metodos(self.metodos_dict[i], i)
+        #     self.plot_grafico_fase(self.metodos_dict[i], i)
 
         return
 
@@ -322,8 +322,9 @@ class Metodos:
         return None
 
     def erros_metodos(self, metodo, titulo):
+
         # Parâmetros da simulação
-        h_values = [0.01, 0.005, 0.0025, 0.00125, 0.000625]
+        h_values = [0.1, 0.05, 0.001, 0.0005, 0.0001]
 
         # Cálculo e plotagem da ordem de convergência temporal para o método de Euler explícito
         error_list = []
@@ -356,24 +357,69 @@ class Metodos:
         Returns:
             Lista contendo os valores do erro absoluto.
         """
-        return np.linalg.norm(y_exact - y_approx)
 
-    def plot_convergence_order(errors, step_sizes):
-        """
-        Plota o gráfico do logaritmo do erro em função do logaritmo do tamanho do passo.
+        # # Calculando o erro
+        erro_absoluto = np.abs(y_exact - y_approx)
 
-        Args:
-            errors: Lista contendo os valores do erro absoluto.
-            step_sizes: Lista contendo os tamanhos do passo correspondentes.
+        # Calculando a norma máxima
+        norma_max = np.amax(np.abs(erro_absoluto))
 
-        Returns:
-            None
-        """
-        plt.loglog(step_sizes, errors, 'o-', label='Erro')
+        # Calculando o erro relativo
+        erro_relativo = norma_max / np.amax(y_exact - y_approx)
 
-        # Ajusta a escala do gráfico
-        plt.xlabel('Tamanho do Passo (h)')
-        plt.ylabel('Erro Absoluto')
-        plt.grid(True)
+        return erro_relativo
+
+    def plot_grafico_fase(self, metodo, titulo):
+
+        t, u = metodo(self.t0, self.u0, self.h, self.num_passos)
+
+        # Plotando o gráfico de fase
+        plt.figure(figsize=(10, 6))
+        plt.plot(u[:][0], u[:][1], label=titulo)
+
+        plt.xlabel('Posição Angular (u[1])')
+        plt.ylabel('Velocidade Angular (u[2]')
+        plt.title('Gráfico de Fase')
         plt.legend()
-        plt.show()
+        plt.grid(True)
+
+        if not os.path.exists('graficos_fase'):
+            os.makedirs('graficos_fase')
+        plt.savefig('graficos_fase/' + titulo + '.png')
+        plt.close()
+
+    def tempos_execucao(self):
+        h_values = [0.01, 0.001, 0.0001]
+
+        tempos = {"euler_explicito": [], "taylor_2": [],
+                  "adams_bashforth2":  [], "euler_implicito": [],
+                  "preditor_corretor":  []}
+
+        for i in h_values:
+            for metodo in self.metodos_dict.keys():
+                start = time.time()
+                self.metodos_dict[metodo](self.t0, self.u0, i, self.num_passos)
+                end = time.time()
+                tempos[metodo].append(end - start)
+
+        # Plotando o gráfico
+        plt.figure(figsize=(8, 6))
+
+        for method, times in tempos.items():
+            plt.scatter(h_values, times, label=method)
+
+        plt.xlabel('Tamanho do Passo de Tempo (h)')
+        plt.ylabel('Tempo de Execução (s)')
+        plt.title('Tempo de Execução em Função do Tamanho do Passo de Tempo')
+        plt.legend()
+        plt.grid(True)
+
+        if not os.path.exists('tempos_execucoes'):
+            os.makedirs('tempos_execucoes')
+        plt.savefig('tempos_execucoes/tempos.png')
+        plt.close()
+
+        return
+
+    def cuzinho():
+        pass
