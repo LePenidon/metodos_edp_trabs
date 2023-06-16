@@ -31,7 +31,7 @@ class Metodos:
                              "adams_bashforth2": self.adams_bashforth2, "euler_implicito": self.euler_implicito,
                              "preditor_corretor": self.preditor_corretor}
 
-        # self.tempos_execucao()
+        self.tempos_execucao()
 
         for i in self.metodos_dict.keys():
             self.plot_vel_pos(i)
@@ -329,16 +329,16 @@ class Metodos:
     def erros_metodos(self, metodo, titulo):
 
         # Parâmetros da simulação
-        h_values = [0.1, 0.05, 0.001, 0.0005, 0.0001]
+        h_values = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
 
         # Cálculo e plotagem da ordem de convergência temporal para o método de Euler explícito
         error_list = []
         for h in h_values:
             t, u_metodo = metodo(self.t0, self.u0, h, self.num_passos)
 
-            u_ref = self.sol_referencia(self.t0, self.u0)
+            u_aprox = np.array([u_metodo[-1][0], u_metodo[-1][1]])
 
-            error = self.calculate_error(u_ref, u_metodo)
+            error = self.calculate_error(self.u_ref, u_aprox)
 
             error_list.append(error)
 
@@ -347,34 +347,36 @@ class Metodos:
         plt.xlabel('Tamanho do Passo (h)')
         plt.ylabel('Erro de Aproximação')
         plt.title('Gráfico de Convergência do Erro - ' + titulo)
+        plt.grid(True)
 
         if not os.path.exists('graficos_erros'):
             os.makedirs('graficos_erros')
         plt.savefig('graficos_erros/' + titulo + '.png')
+
         plt.close()
 
         return None
 
-    def calculate_error(self, y_exact, y_approx):
+    def calculate_error(self, u_exact, u_approx):
         """
         Calcula o erro absoluto entre a solução exata e a solução aproximada.
 
         Args:
-            y_exact: Lista contendo os valores exatos da solução.
-            y_approx: Lista contendo os valores aproximados da solução.
+            u_exact: Lista contendo os valores exatos da solução.
+            u_approx: Lista contendo os valores aproximados da solução.
 
         Returns:
             Lista contendo os valores do erro absoluto.
         """
 
         # # Calculando o erro
-        erro_absoluto = np.abs(y_exact - y_approx)
+        erro_absoluto = np.abs(u_exact - u_approx)
 
         # Calculando a norma máxima
         norma_max = np.amax(np.abs(erro_absoluto))
 
         # Calculando o erro relativo
-        erro_relativo = norma_max / np.amax(y_exact - y_approx)
+        erro_relativo = norma_max / np.amax(u_exact - u_approx)
 
         return norma_max
 
@@ -382,9 +384,12 @@ class Metodos:
 
         t, u = metodo(self.t0, self.u0, self.h, self.num_passos)
 
+        primeira_coluna = [linha[0] for linha in u]
+        segunda_coluna = [linha[1] for linha in u]
+
         # Plotando o gráfico de fase
         plt.figure(figsize=(10, 6))
-        plt.plot(u[0][0], u[:][1], label=titulo)
+        plt.plot(primeira_coluna, segunda_coluna, label=titulo)
 
         plt.xlabel('Posição Angular (u[1])')
         plt.ylabel('Velocidade Angular (u[2]')
@@ -398,7 +403,7 @@ class Metodos:
         plt.close()
 
     def tempos_execucao(self):
-        h_values = [0.01, 0.001, 0.0001]
+        h_values = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
 
         tempos = {"euler_explicito": [], "taylor_2": [],
                   "adams_bashforth2":  [], "euler_implicito": [],
