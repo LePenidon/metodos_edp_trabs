@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.special import ellipj
-from scipy.special import ellipk
-from scipy.optimize import newton
+from scipy.special import ellipj  # type: ignore
+from scipy.special import ellipk  # type: ignore
+from scipy.optimize import newton  # type: ignore
+
 import os
 import time
 
@@ -16,7 +17,7 @@ class Metodos:
         self.num_passos = num_passos
         self.tf = t0 + h*num_passos
 
-        self.u_ref = self.sol_referencia()
+        self.u_ref = self.sol_referencia(t0, u0)
 
         self.t_euler_e, self.u_euler_e = self.euler_explicito(
             t0, u0, h, num_passos)
@@ -93,7 +94,7 @@ class Metodos:
 
         return jac
 
-    def sol_referencia(self):
+    def sol_referencia(self, t, u):
         """
         Calcula a solução de referência do sistema de equações diferenciais.
 
@@ -102,20 +103,20 @@ class Metodos:
 
         Example:
             >>> obj = MyClass()
-            >>> obj.u0 = [0.5, 1.0]
-            >>> obj.tf = 2.0
+            >>> obj.u = [0.5, 1.0]
+            >>> obj.t = 2.0
             >>> obj.sol_referencia()
             array([ 3.01190207, -0.15623905])
         """
 
         # Variável auxiliar
-        k_0 = np.sin(0.5*self.u0[0])
+        k_0 = np.sin(0.5*u[0])
 
         # Integral elíptica incompleta de primeira espécie
         K = ellipk(k_0**2)
 
         # Funções elípticas de Jacobi: sn e cn
-        sn, cn, dn, ph = ellipj(K - self.tf, k_0**2)
+        sn, cn, dn, ph = ellipj(K - t, k_0**2)
 
         # Deslocamento angular
         q = 2*np.arcsin(k_0*sn)
@@ -184,10 +185,10 @@ class Metodos:
             f_i = self.f(u_i, t_i)
 
             t_prox = t_i + h
-            u_prox_corr = u_i + (h / 2) * (3 * f_i - self.f(u[i-1], t[i-1]))
+            u_prox_pred = u_i + (h / 2) * (3 * f_i - self.f(u[i-1], t[i-1]))
 
             t.append(t_prox)
-            u.append(u_prox_corr)
+            u.append(u_prox_pred)
 
         return t, u
 
@@ -301,6 +302,10 @@ class Metodos:
             u2_vals = [u[1] for u in self.u_PC]
             t = self.t_PC
 
+        else:
+            print("Titulo invalido")
+            return None
+
         # Plotar o gráfico de u1(t) e u2(t) no mesmo gráfico
         plt.figure(figsize=(10, 6))
         plt.plot(t, u1_vals, 'b-', label='Posição Angular (u1)')
@@ -329,8 +334,12 @@ class Metodos:
         # Cálculo e plotagem da ordem de convergência temporal para o método de Euler explícito
         error_list = []
         for h in h_values:
-            t, u = metodo(self.t0, self.u0, h, self.num_passos)
-            error = self.calculate_error(self.u_ref, u)
+            t, u_metodo = metodo(self.t0, self.u0, h, self.num_passos)
+
+            u_ref = self.sol_referencia(self.t0, self.u0)
+
+            error = self.calculate_error(u_ref, u_metodo)
+
             error_list.append(error)
 
         # Plotagem do gráfico de convergência do erro de aproximação
@@ -367,7 +376,7 @@ class Metodos:
         # Calculando o erro relativo
         erro_relativo = norma_max / np.amax(y_exact - y_approx)
 
-        return erro_relativo
+        return norma_max
 
     def plot_grafico_fase(self, metodo, titulo):
 
@@ -375,7 +384,7 @@ class Metodos:
 
         # Plotando o gráfico de fase
         plt.figure(figsize=(10, 6))
-        plt.plot(u[:][0], u[:][1], label=titulo)
+        plt.plot(u[0][0], u[:][1], label=titulo)
 
         plt.xlabel('Posição Angular (u[1])')
         plt.ylabel('Velocidade Angular (u[2]')
