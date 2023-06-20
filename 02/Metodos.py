@@ -31,12 +31,13 @@ class Metodos:
                              "adams_bashforth2": self.adams_bashforth2, "euler_implicito": self.euler_implicito,
                              "preditor_corretor": self.preditor_corretor}
 
-        self.tempos_execucao()
+        # self.tempos_execucao()
+        self.plot_referencia_vel_pos()
 
-        for i in self.metodos_dict.keys():
-            self.plot_vel_pos(i)
-            self.erros_metodos(self.metodos_dict[i], i)
-            self.plot_grafico_fase(self.metodos_dict[i], i)
+        # for i in self.metodos_dict.keys():
+        #     self.plot_vel_pos(i)
+        #     self.erros_metodos(self.metodos_dict[i], i)
+        #     self.plot_grafico_fase(self.metodos_dict[i], i)
 
         return
 
@@ -127,6 +128,24 @@ class Metodos:
         u = np.array([q, p])
 
         return u
+
+    def plot_referencia_vel_pos(self):
+        """
+        Plota os gráficos da solução de referência para as variáveis u1 e u2 em função do tempo.
+        """
+        print(self.u_ref)
+        t_lin = np.linspace(self.t0, self.tf, 1000)
+        u0_lin = np.linspace(self.u0[0], self.u0[1], 1000)
+
+        plt.figure(1)
+        plt.plot(t_lin, u0_lin, 'k', label='u1 (referência)')
+        plt.plot(t_lin, u0_lin, 'k--', label='u2 (referência)')
+        plt.xlabel('t')
+        plt.ylabel('u')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig('ref_vel_pos.pdf')
+        plt.close()
 
     def euler_explicito(self, t0, u0, h, num_passos):
         # Lista para armazenar os valores de t
