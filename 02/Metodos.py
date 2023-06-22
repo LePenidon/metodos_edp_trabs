@@ -447,15 +447,26 @@ class Metodos:
         return None
 
     def erros_metodos(self, metodo, titulo):
+        """
+        Calcula e plota a convergência do erro de aproximação para um determinado método numérico.
 
-        if (titulo == "referencia"):
+        Args:
+            metodo (callable): Função que implementa o método numérico a ser avaliado.
+            titulo (str): Título do gráfico. Deve ser um dos seguintes valores: "euler_explicito", "taylor_2",
+                "adams_bashforth2", "euler_implicito", "preditor_corretor".
+
+        Returns:
+            None
+        """
+
+        if titulo == "referencia":
             print("Titulo invalido")
             return None
 
         # Parâmetros da simulação
         h_values = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
 
-        # Cálculo e plotagem da ordem de convergência temporal para o método de Euler explícito
+        # Cálculo e plotagem da ordem de convergência temporal para o método
         error_list = []
         for h in h_values:
             t, u_metodo = metodo(self.t0, self.u0, h, self.num_passos)
@@ -486,27 +497,34 @@ class Metodos:
         Calcula o erro absoluto entre a solução exata e a solução aproximada.
 
         Args:
-            u_exact: Lista contendo os valores exatos da solução.
-            u_approx: Lista contendo os valores aproximados da solução.
+            u_exact (list): Lista contendo os valores exatos da solução.
+            u_approx (list): Lista contendo os valores aproximados da solução.
 
         Returns:
-            Lista contendo os valores do erro absoluto.
+            float: Valor do erro absoluto.
         """
 
-        # # Calculando o erro
+        # Calculando o erro absoluto
         erro_absoluto = np.abs(u_exact - u_approx)
 
         # Calculando a norma máxima
         norma_max = np.amax(np.abs(erro_absoluto))
 
-        # Calculando o erro relativo
-        erro_relativo = norma_max / np.amax(u_exact - u_approx)
-
         return norma_max
 
     def plot_grafico_fase(self, metodo, titulo):
+        """
+        Gera um gráfico de fase com a posição angular (u[1]) no eixo x e a velocidade angular (u[2]) no eixo y.
 
-        if (titulo == "referencia"):
+        Args:
+            metodo (function): Função que implementa o método numérico.
+            titulo (str): Título do gráfico.
+
+        Returns:
+            None
+        """
+
+        if titulo == "referencia":
             t = self.t_lin
             u = self.u_ref
         else:
@@ -520,7 +538,7 @@ class Metodos:
         plt.plot(primeira_coluna, segunda_coluna, label=titulo)
 
         plt.xlabel('Posição Angular (u[1])')
-        plt.ylabel('Velocidade Angular (u[2]')
+        plt.ylabel('Velocidade Angular (u[2])')
         plt.title('Gráfico de Fase')
         plt.legend()
         plt.grid(True)
@@ -531,6 +549,13 @@ class Metodos:
         plt.close()
 
     def tempos_execucao(self):
+        """
+        Calcula e plota os tempos de execução para cada método em função do tamanho do passo de tempo.
+
+        Returns:
+            None
+        """
+
         h_values = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
 
         tempos = {"referencia": [], "euler_explicito": [], "taylor_2": [],
@@ -539,7 +564,7 @@ class Metodos:
 
         for i in h_values:
             for metodo in self.metodos_dict.keys():
-                if (metodo == "referencia"):
+                if metodo == "referencia":
                     start = time.time()
                     self.u_ref = [self.sol_referencia(
                         t, self.u0) for t in self.t_lin]
@@ -568,5 +593,3 @@ class Metodos:
             os.makedirs('tempos_execucoes')
         plt.savefig('tempos_execucoes/tempos.png')
         plt.close()
-
-        return
