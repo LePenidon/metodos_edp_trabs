@@ -11,14 +11,36 @@ import time
 class Metodos:
 
     def __init__(self, t0, u0, h, num_passos):
+        """
+        Inicializa a classe Metodos com os parâmetros necessários para a resolução do sistema de equações diferenciais.
+
+        Args:
+            t0 (float): Valor inicial do parâmetro t.
+            u0 (list or array): Lista ou array contendo os valores iniciais das variáveis u1 e u2.
+            h (float): Tamanho do passo.
+            num_passos (int): Número de passos.
+
+        Returns:
+            None
+
+        Example:
+            >>> obj = Metodos(0.0, [0.5, 1.0], 0.01, 100)
+
+        """
+        # Define os parâmetros iniciais
         self.t0 = t0
         self.u0 = u0
         self.h = h
         self.num_passos = num_passos
-        self.tf = t0 + h*num_passos
+        self.tf = t0 + h * num_passos
 
-        self.u_ref = self.sol_referencia(t0, u0)
+        # Cria uma lista de valores de tempo uniformemente espaçados
+        self.t_lin = np.linspace(t0, self.tf, num_passos)
 
+        # Calcula os valores de referência do vetor de estados
+        self.u_ref = [self.sol_referencia(t, u0) for t in self.t_lin]
+
+        # Chama os métodos de resolução para cada um dos métodos
         self.t_euler_e, self.u_euler_e = self.euler_explicito(
             t0, u0, h, num_passos)
         self.t_taylor_2, self.u_taylor_2 = self.taylor_2(t0, u0, h, num_passos)
@@ -27,23 +49,32 @@ class Metodos:
             t0, u0, h, num_passos)
         self.t_PC, self.u_PC = self.preditor_corretor(t0, u0, h, num_passos)
 
-        self.metodos_dict = {"euler_explicito": self.euler_explicito, "taylor_2": self.taylor_2,
-                             "adams_bashforth2": self.adams_bashforth2, "euler_implicito": self.euler_implicito,
-                             "preditor_corretor": self.preditor_corretor}
+        # Define um dicionário com os métodos de resolução
+        self.metodos_dict = {
+            "referencia": self.sol_referencia,
+            "euler_explicito": self.euler_explicito,
+            "taylor_2": self.taylor_2,
+            "adams_bashforth2": self.adams_bashforth2,
+            "euler_implicito": self.euler_implicito,
+            "preditor_corretor": self.preditor_corretor
+        }
 
-        # self.tempos_execucao()
-        self.plot_referencia_vel_pos()
+        # Calcula os tempos de execução para cada método de resolução
+        self.tempos_execucao()
 
-        # for i in self.metodos_dict.keys():
-        #     self.plot_vel_pos(i)
-        #     self.erros_metodos(self.metodos_dict[i], i)
-        #     self.plot_grafico_fase(self.metodos_dict[i], i)
+        # Plota os gráficos para cada método de resolução
+        for i in self.metodos_dict.keys():
+            self.plot_vel_pos(i)  # Plota o gráfico de velocidade versus tempo
+            # Calcula e plota os erros para cada método
+            self.erros_metodos(self.metodos_dict[i], i)
+            # Plota o gráfico de fase
+            self.plot_grafico_fase(self.metodos_dict[i], i)
 
         return
 
     def f(self, u, t):
         """
-        Função que define o sistema de equações diferenciais.
+        Define a função que retorna as derivadas de u1 e u2 em relação a t.
 
         Args:
             u (list or array): Lista ou array contendo os valores das variáveis u1 e u2.
@@ -57,9 +88,8 @@ class Metodos:
             >>> u = [0.5, 1.0]
             >>> t = 0.0
             >>> obj.f(u, t)
-            array([1.0       , -0.47942554])
+            array([ 1.        , -0.47942554])
         """
-
         u1, u2 = u
 
         # Define as derivadas de u1 e u2 em relação a t
@@ -69,14 +99,14 @@ class Metodos:
 
     def f_jac(self, u, t):
         """
-        Função que define a matriz jacobiana do sistema de equações diferenciais.
+        Define a função que retorna a matriz jacobiana da função f em relação às variáveis u1 e u2.
 
         Args:
             u (list or array): Lista ou array contendo os valores das variáveis u1 e u2.
             t (float): Valor do parâmetro t.
 
         Returns:
-            array: Array contendo a matriz jacobiana.
+            array: Array contendo a matriz jacobiana da função f em relação às variáveis u1 e u2.
 
         Example:
             >>> obj = MyClass()
@@ -84,9 +114,8 @@ class Metodos:
             >>> t = 0.0
             >>> obj.f_jac(u, t)
             array([[ 0.        ,  1.        ],
-                   [-0.87758256,  0.        ]])
+                [-0.87758256,  0.        ]])
         """
-
         # Extrai os valores de u1 e u2 do vetor u
         u1, u2 = u
 
@@ -99,8 +128,15 @@ class Metodos:
         """
         Calcula a solução de referência do sistema de equações diferenciais.
 
+        Esta função recebe dois argumentos: t, que representa o tempo, e u, que é uma lista contendo dois valores numéricos.
+        A função realiza uma série de cálculos para determinar a solução de referência do sistema de equações diferenciais.
+
+        Args:
+            t (float): O tempo.
+            u (list): Lista contendo dois valores numéricos.
+
         Returns:
-            array: Array contendo os valores da solução de referência.
+            np.array: Array contendo os valores da solução de referência.
 
         Example:
             >>> obj = MyClass()
@@ -110,82 +146,116 @@ class Metodos:
             array([ 3.01190207, -0.15623905])
         """
 
-        # Variável auxiliar
-        k_0 = np.sin(0.5*u[0])
+        # Variável auxiliar para calcular k_0
+        k_0 = np.sin(0.5 * u[0])
 
-        # Integral elíptica incompleta de primeira espécie
-        K = ellipk(k_0**2)
+        # Cálculo da integral elíptica incompleta de primeira espécie
+        K = ellipk(k_0 ** 2)
 
-        # Funções elípticas de Jacobi: sn e cn
-        sn, cn, dn, ph = ellipj(K - t, k_0**2)
+        # Cálculo das funções elípticas de Jacobi: sn, cn, dn e ph
+        sn, cn, dn, ph = ellipj(K - t, k_0 ** 2)
 
-        # Deslocamento angular
-        q = 2*np.arcsin(k_0*sn)
+        # Cálculo do deslocamento angular
+        q = 2 * np.arcsin(k_0 * sn)
 
-        # Velocidade angular
-        p = -2*k_0*cn
+        # Cálculo da velocidade angular
+        p = -2 * k_0 * cn
 
+        # Vetor de solução de referência contendo os valores do deslocamento angular e da velocidade angular
         u = np.array([q, p])
 
         return u
 
-    def plot_referencia_vel_pos(self):
-        """
-        Plota os gráficos da solução de referência para as variáveis u1 e u2 em função do tempo.
-        """
-        print(self.u_ref)
-        t_lin = np.linspace(self.t0, self.tf, 1000)
-        u0_lin = np.linspace(self.u0[0], self.u0[1], 1000)
-
-        plt.figure(1)
-        plt.plot(t_lin, u0_lin, 'k', label='u1 (referência)')
-        plt.plot(t_lin, u0_lin, 'k--', label='u2 (referência)')
-        plt.xlabel('t')
-        plt.ylabel('u')
-        plt.legend()
-        plt.grid(True)
-        plt.savefig('ref_vel_pos.pdf')
-        plt.close()
-
     def euler_explicito(self, t0, u0, h, num_passos):
-        # Lista para armazenar os valores de t
-        t = [t0]
-        # Lista para armazenar os valores de u
-        u = [u0]
+        """
+        Implementa o método de Euler explícito para resolver um sistema de equações diferenciais de primeira ordem.
 
-        for i in range(num_passos):
-            t_i = t[-1]
-            u_i = u[-1]
-            f_i = self.f(u_i, t_i)
-            # Cálculo do próximo valor de u usando o método de Euler explícito
-            u_prox = u_i + h * f_i
-            # Atualização do valor de t
-            t.append(t_i + h)
-            # Adição do próximo valor de u à lista
-            u.append(u_prox)
+        Args:
+            t0 (float): Condição inicial para o tempo.
+            u0 (numpy.ndarray): Condição inicial para o vetor de estados.
+            h (float): Tamanho do passo de integração.
+            num_passos (int): Número de passos de integração.
 
-        return t, u
+        Returns:
+            tuple: Tupla contendo duas listas, onde a primeira lista contém os valores de tempo e a segunda lista contém
+                os valores do vetor de estados ao longo da integração.
+        """
 
-    def taylor_2(self, t0, u0, h, num_passos):
         t = [t0]  # Lista para armazenar os valores de t
         u = [u0]  # Lista para armazenar os valores de u
 
         for i in range(num_passos):
             t_i = t[-1]
             u_i = u[-1]
-            f_i = self.f(u_i, t_i)  # Calcula o vetor f(u_i, t_i)
-            # Calcula a matriz Jacobiana df(u_i, t_i)
-            f_jac_i = self.f_jac(u_i, t_i)
-            # Cálculo do próximo valor de u usando o método de Taylor de ordem 2
-            u_prox = u_i + h * f_i + h**2/2*(np.dot(f_jac_i, f_i))
+
+            # Cálculo do valor da função f(u, t) no ponto atual
+            f_i = self.f(u_i, t_i)
+
+            # Cálculo do próximo valor de u usando o método de Euler explícito
+            u_prox = u_i + h * f_i
+
             # Atualização do valor de t
             t.append(t_i + h)
+
+            # Adição do próximo valor de u à lista
+            u.append(u_prox)
+
+        return t, u
+
+    def taylor_2(self, t0, u0, h, num_passos):
+        """
+        Implementa o método de Taylor de ordem 2 para resolver um sistema de equações diferenciais de primeira ordem.
+
+        Args:
+            t0 (float): Condição inicial para o tempo.
+            u0 (numpy.ndarray): Condição inicial para o vetor de estados.
+            h (float): Tamanho do passo de integração.
+            num_passos (int): Número de passos de integração.
+
+        Returns:
+            tuple: Tupla contendo duas listas, onde a primeira lista contém os valores de tempo e a segunda lista contém
+                os valores do vetor de estados ao longo da integração.
+        """
+
+        t = [t0]  # Lista para armazenar os valores de t
+        u = [u0]  # Lista para armazenar os valores de u
+
+        for i in range(num_passos):
+            t_i = t[-1]  # Último valor de t
+            u_i = u[-1]  # Último valor de u
+
+            # Calcula o vetor f(u_i, t_i) usando a função f definida anteriormente
+            f_i = self.f(u_i, t_i)
+
+            # Calcula a matriz Jacobiana df(u_i, t_i) usando a função f_jac definida anteriormente
+            f_jac_i = self.f_jac(u_i, t_i)
+
+            # Cálculo do próximo valor de u usando o método de Taylor de ordem 2
+            u_prox = u_i + h * f_i + h**2/2 * (np.dot(f_jac_i, f_i))
+
+            # Atualização do valor de t
+            t.append(t_i + h)
+
             # Adição do próximo valor de u à lista
             u.append(u_prox)
 
         return t, u
 
     def adams_bashforth2(self, t0, u0, h, num_passos):
+        """
+        Implementa o método de Adams-Bashforth de ordem 2 para resolver um sistema de equações diferenciais de primeira ordem.
+
+        Args:
+            t0 (float): Condição inicial para o tempo.
+            u0 (numpy.ndarray): Condição inicial para o vetor de estados.
+            h (float): Tamanho do passo de integração.
+            num_passos (int): Número de passos de integração.
+
+        Returns:
+            tuple: Tupla contendo duas listas, onde a primeira lista contém os valores de tempo e a segunda lista contém
+                os valores do vetor de estados ao longo da integração.
+        """
+
         t = [t0]  # Lista para armazenar os valores de t
         u = [u0]  # Lista para armazenar os valores de u
 
@@ -203,30 +273,64 @@ class Metodos:
             u_i = u_prox_pred
             f_i = self.f(u_i, t_i)
 
+            # Cálculo do próximo valor de t e u usando o método de Adams-Bashforth de ordem 2
             t_prox = t_i + h
             u_prox_pred = u_i + (h / 2) * (3 * f_i - self.f(u[i-1], t[i-1]))
 
+            # Adição do próximo valor de t e u às listas
             t.append(t_prox)
             u.append(u_prox_pred)
 
         return t, u
 
     def euler_implicito(self, t0, u0, h, num_passos):
+        """
+        Implementa o método de Euler implícito para resolver um sistema de equações diferenciais de primeira ordem.
+
+        Args:
+            t0 (float): Condição inicial para o tempo.
+            u0 (numpy.ndarray): Condição inicial para o vetor de estados.
+            h (float): Tamanho do passo de integração.
+            num_passos (int): Número de passos de integração.
+
+        Returns:
+            tuple: Tupla contendo duas listas, onde a primeira lista contém os valores de tempo e a segunda lista contém
+                os valores do vetor de estados ao longo da integração.
+        """
+
         t = [t0]  # Lista para armazenar os valores de t
         u = [u0]  # Lista para armazenar os valores de u
 
         for i in range(num_passos):
             t_i = t[-1]
             u_i = u[-1]
-            def f_i(u_prox): return u_prox - u_i - h * self.f(u_prox, t_i + h)
+
+            def f_i(u_prox):
+                return u_prox - u_i - h * self.f(u_prox, t_i + h)
+
             # Usando o método de Newton para encontrar u_{i+1}
             u_prox = newton(f_i, u_i)
+
             t.append(t_i + h)
             u.append(u_prox)
 
         return t, u
 
     def preditor_corretor(self, t0, u0, h, num_passos):
+        """
+        Implementa o método do preditor-corretor para resolver um sistema de equações diferenciais de primeira ordem.
+
+        Args:
+            t0 (float): Condição inicial para o tempo.
+            u0 (numpy.ndarray): Condição inicial para o vetor de estados.
+            h (float): Tamanho do passo de integração.
+            num_passos (int): Número de passos de integração.
+
+        Returns:
+            tuple: Tupla contendo duas listas, onde a primeira lista contém os valores de tempo e a segunda lista contém
+                os valores do vetor de estados ao longo da integração.
+        """
+
         t = [t0]  # Lista para armazenar os valores de t
         u = [u0]  # Lista para armazenar os valores de u
 
@@ -285,19 +389,13 @@ class Metodos:
         Gera um gráfico com a posição angular (u1) e a velocidade angular (u2) em função do tempo (t).
 
         Args:
-            u (list): Lista contendo os valores de u ao longo do tempo.
-            t (list): Lista contendo os valores de tempo correspondentes.
-            titulo (str): Título do gráfico.
+            titulo (str): Título do gráfico. Deve ser um dos seguintes valores: "euler_explicito", "taylor_2",
+                "adams_bashforth2", "euler_implicito", "preditor_corretor", "referencia".
 
         Returns:
             None
-
-        Example:
-            >>> u = [[0.5, 1.0], [0.50166713, 0.99983351], [0.50333427, 0.99966701], ..., [2.234987, -0.423314], [2.2336457, -0.4243009]]
-            >>> t = [0.0, 0.01, 0.02, ..., 0.99, 1.0]
-            >>> titulo = 'Gráfico de Posição e Velocidade Angular'
-            >>> plot_vel_pos(u, t, titulo)
         """
+
         # Extrair os valores de u1 e u2
 
         if titulo == "euler_explicito":
@@ -320,7 +418,10 @@ class Metodos:
             u1_vals = [u[0] for u in self.u_PC]
             u2_vals = [u[1] for u in self.u_PC]
             t = self.t_PC
-
+        elif titulo == "referencia":
+            u1_vals = [u[0] for u in self.u_ref]
+            u2_vals = [u[1] for u in self.u_ref]
+            t = self.t_lin
         else:
             print("Titulo invalido")
             return None
@@ -346,6 +447,10 @@ class Metodos:
         return None
 
     def erros_metodos(self, metodo, titulo):
+
+        if (titulo == "referencia"):
+            print("Titulo invalido")
+            return None
 
         # Parâmetros da simulação
         h_values = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
@@ -401,7 +506,11 @@ class Metodos:
 
     def plot_grafico_fase(self, metodo, titulo):
 
-        t, u = metodo(self.t0, self.u0, self.h, self.num_passos)
+        if (titulo == "referencia"):
+            t = self.t_lin
+            u = self.u_ref
+        else:
+            t, u = metodo(self.t0, self.u0, self.h, self.num_passos)
 
         primeira_coluna = [linha[0] for linha in u]
         segunda_coluna = [linha[1] for linha in u]
@@ -424,12 +533,20 @@ class Metodos:
     def tempos_execucao(self):
         h_values = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
 
-        tempos = {"euler_explicito": [], "taylor_2": [],
+        tempos = {"referencia": [], "euler_explicito": [], "taylor_2": [],
                   "adams_bashforth2":  [], "euler_implicito": [],
                   "preditor_corretor":  []}
 
         for i in h_values:
             for metodo in self.metodos_dict.keys():
+                if (metodo == "referencia"):
+                    start = time.time()
+                    self.u_ref = [self.sol_referencia(
+                        t, self.u0) for t in self.t_lin]
+                    end = time.time()
+                    tempos[metodo].append(end - start)
+                    continue
+
                 start = time.time()
                 self.metodos_dict[metodo](self.t0, self.u0, i, self.num_passos)
                 end = time.time()
