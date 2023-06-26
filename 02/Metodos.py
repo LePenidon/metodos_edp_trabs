@@ -10,7 +10,7 @@ import time
 
 class Metodos:
 
-    def __init__(self, t0, u0, h, num_passos):
+    def __init__(self, t0, tf, u0, h):
         """
         Inicializa a classe Metodos com os parâmetros necessários para a resolução do sistema de equações diferenciais.
 
@@ -29,25 +29,25 @@ class Metodos:
         """
         # Define os parâmetros iniciais
         self.t0 = t0
+        self.tf = tf
         self.u0 = u0
         self.h = h
-        self.num_passos = num_passos
-        self.tf = t0 + h * num_passos
+        self.num_passos = round((self.tf-self.t0)/self.h)
 
         # Cria uma lista de valores de tempo uniformemente espaçados
-        self.t_lin = np.linspace(t0, self.tf, num_passos)
+        self.t_lin = np.linspace(t0, self.tf, self.num_passos+1)
 
         # Calcula os valores de referência do vetor de estados
         self.u_ref = [self.sol_referencia(t, u0) for t in self.t_lin]
 
         # Chama os métodos de resolução para cada um dos métodos
         self.t_euler_e, self.u_euler_e = self.euler_explicito(
-            t0, u0, h, num_passos)
-        self.t_taylor_2, self.u_taylor_2 = self.taylor_2(t0, u0, h, num_passos)
-        self.t_AB_2, self.u_AB_2 = self.adams_bashforth2(t0, u0, h, num_passos)
+            t0, u0, h, self.num_passos)
+        self.t_taylor_2, self.u_taylor_2 = self.taylor_2(t0, u0, h, self.num_passos)
+        self.t_AB_2, self.u_AB_2 = self.adams_bashforth2(t0, u0, h, self.num_passos)
         self.t_euler_i, self.u_euler_i = self.euler_implicito(
-            t0, u0, h, num_passos)
-        self.t_PC, self.u_PC = self.preditor_corretor(t0, u0, h, num_passos)
+            t0, u0, h, self.num_passos)
+        self.t_PC, self.u_PC = self.preditor_corretor(t0, u0, h, self.num_passos)
 
         # Define um dicionário com os métodos de resolução
         self.metodos_dict = {
@@ -64,7 +64,8 @@ class Metodos:
 
         # Plota os gráficos para cada método de resolução
         for i in self.metodos_dict.keys():
-            self.plot_vel_pos(i)  # Plota o gráfico de velocidade versus tempo
+            # Plota o gráfico de velocidade versus tempo
+            self.plot_vel_pos(i)
             # Calcula e plota os erros para cada método
             self.erros_metodos(self.metodos_dict[i], i)
             # Plota o gráfico de fase
@@ -464,29 +465,57 @@ class Metodos:
             return None
 
         # Parâmetros da simulação
-        h_values = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
+        h_values = [0.1, 0.01, 0.001, 0.0001, 0.00001]
 
         # Cálculo e plotagem da ordem de convergência temporal para o método
-        error_list = []
+        error_u1_list = []
+        error_u2_list = []
+
         for h in h_values:
-            t, u_metodo = metodo(self.t0, self.u0, h, self.num_passos)
+            num_passos = round((self.tf-self.t0)/h)
+            t, u_metodo = metodo(self.t0, self.u0, h, num_passos)
 
-            u_aprox = np.array([u_metodo[-1][0], u_metodo[-1][1]])
+            # Cria uma lista de valores de tempo uniformemente espaçados
+            t_lin = np.linspace(self.t0, self.tf, num_passos+1)
+            # Calcula os valores de referência do vetor de estados
 
-            error = self.calculate_error(self.u_ref, u_aprox)
+            u_ref = [self.sol_referencia(t, self.u0) for t in t_lin]
 
-            error_list.append(error)
+            primeira_coluna_metodo = [linha[0] for linha in u_metodo]
+            segunda_coluna_metodo = [linha[1] for linha in u_metodo]
+
+            primeira_coluna_ref = [linha[0] for linha in u_ref]
+            segunda_coluna_ref = [linha[1] for linha in u_ref]
+
+            error_u1 = self.calculate_error(primeira_coluna_ref, primeira_coluna_metodo)
+            error_u2 = self.calculate_error(segunda_coluna_ref, segunda_coluna_metodo)
+
+            error_u1_list.append(error_u1)
+            error_u2_list.append(error_u2)
 
         # Plotagem do gráfico de convergência do erro de aproximação
-        plt.loglog(h_values, error_list, '-o')
+        plt.loglog(h_values, error_u1_list, '-o')
         plt.xlabel('Tamanho do Passo (h)')
         plt.ylabel('Erro de Aproximação')
-        plt.title('Gráfico de Convergência do Erro - ' + titulo)
+        plt.title('Gráfico de Convergência do Erro da Posição' + titulo)
         plt.grid(True)
 
         if not os.path.exists('graficos_erros'):
             os.makedirs('graficos_erros')
-        plt.savefig('graficos_erros/' + titulo + '.png')
+        plt.savefig('graficos_erros/' + titulo + "_pos" + '.png')
+
+        plt.close()
+
+        # Plotagem do gráfico de convergência do erro de aproximação
+        plt.loglog(h_values, error_u2_list, '-o')
+        plt.xlabel('Tamanho do Passo (h)')
+        plt.ylabel('Erro de Aproximação')
+        plt.title('Gráfico de Convergência do Erro da Velocidade' + titulo)
+        plt.grid(True)
+
+        if not os.path.exists('graficos_erros'):
+            os.makedirs('graficos_erros')
+        plt.savefig('graficos_erros/' + titulo + "_vel" + '.png')
 
         plt.close()
 
@@ -505,7 +534,7 @@ class Metodos:
         """
 
         # Calculando o erro absoluto
-        erro_absoluto = np.abs(u_exact - u_approx)
+        erro_absoluto = np.abs(np.subtract(u_exact, u_approx))
 
         # Calculando a norma máxima
         norma_max = np.amax(np.abs(erro_absoluto))
