@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import ellipj  # type: ignore
 from scipy.special import ellipk  # type: ignore
-from scipy.optimize import newton  # type: ignore
+# from scipy.optimize import newton  # type: ignore
+from scipy.linalg import solve
+
 
 import os
 import time
@@ -66,10 +68,10 @@ class Metodos:
         for i in self.metodos_dict.keys():
             # Plota o gráfico de velocidade versus tempo
             self.plot_vel_pos(i)
-            # Calcula e plota os erros para cada método
-            self.erros_metodos(self.metodos_dict[i], i)
-            # Plota o gráfico de fase
-            self.plot_grafico_fase(self.metodos_dict[i], i)
+            # # Calcula e plota os erros para cada método
+            # self.erros_metodos(self.metodos_dict[i], i)
+            # # Plota o gráfico de fase
+            # self.plot_grafico_fase(self.metodos_dict[i], i)
 
         return
 
@@ -284,23 +286,19 @@ class Metodos:
 
         return t, u
 
+    def newton(self, f, x0, f_prime, tol=1e-2, max_iter=50):
+        x = x0
+        for _ in range(max_iter):
+            fx = f(x)
+            if np.linalg.norm(fx) < tol:
+                return x
+            dfx = f_prime(x)
+            x -= solve(dfx, fx)
+        raise ValueError("O método de Newton atingiu o número máximo de iterações sem convergir.")
+
     def euler_implicito(self, t0, u0, h, num_passos):
-        """
-        Implementa o método de Euler implícito para resolver um sistema de equações diferenciais de primeira ordem.
-
-        Args:
-            t0 (float): Condição inicial para o tempo.
-            u0 (numpy.ndarray): Condição inicial para o vetor de estados.
-            h (float): Tamanho do passo de integração.
-            num_passos (int): Número de passos de integração.
-
-        Returns:
-            tuple: Tupla contendo duas listas, onde a primeira lista contém os valores de tempo e a segunda lista contém
-                os valores do vetor de estados ao longo da integração.
-        """
-
-        t = [t0]  # Lista para armazenar os valores de t
-        u = [u0]  # Lista para armazenar os valores de u
+        t = [t0]
+        u = [u0]
 
         for i in range(num_passos):
             t_i = t[-1]
@@ -309,8 +307,10 @@ class Metodos:
             def f_i(u_prox):
                 return u_prox - u_i - h * self.f(u_prox, t_i + h)
 
-            # Usando o método de Newton para encontrar u_{i+1}
-            u_prox = newton(f_i, u_i)
+            def f_prime_i(u_prox):
+                return np.eye(2) - h * self.f_jac(u_prox, t_i + h)
+
+            u_prox = self.newton(f_i, u_i, f_prime_i)
 
             t.append(t_i + h)
             u.append(u_prox)
