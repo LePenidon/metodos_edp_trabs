@@ -67,11 +67,11 @@ class Metodos:
         # Plota os gráficos para cada método de resolução
         for i in self.metodos_dict.keys():
             # Plota o gráfico de velocidade versus tempo
-            # self.plot_vel_pos(i)
+            self.plot_vel_pos(i)
             # # Calcula e plota os erros para cada método
             # self.erros_metodos(self.metodos_dict[i], i)
             # # Plota o gráfico de fase
-            self.plot_grafico_fase(self.metodos_dict[i], i)
+            # self.plot_grafico_fase(self.metodos_dict[i], i)
 
         return
 
@@ -284,23 +284,34 @@ class Metodos:
         raise ValueError("O método de Newton atingiu o número máximo de iterações sem convergir.")
 
     def euler_implicito(self, t0, u0, h, num_passos):
-        t = [t0]
-        u = [u0]
+        vetor_posição_u1 = [u0[0]]
+        vetor_veloc_angular_u2 = [u0[1]]
+        vetor_tempo = [t0]
+        medidor_tempo = h
+        contador = 0
+        while medidor_tempo <= 1:
+            U1_inicial = vetor_posição_u1[contador]
+            U2_inicial = vetor_veloc_angular_u2[contador]
+            u1_iteração_atual = U1_inicial
+            u2_iteração_atual = U2_inicial
+            for i in range(0, 5):
+                vetor_Fx = np.array([u1_iteração_atual - U1_inicial - h*u2_iteração_atual,
+                                    u2_iteração_atual - U2_inicial + h*np.sin(u1_iteração_atual)])
+                matriz_jacob = np.array([[1, -h], [h*np.cos(u1_iteração_atual), 1]])
+                matriz_jacob_inv = np.linalg.inv(matriz_jacob)
+                multplicação_matrizes = np.matmul(matriz_jacob_inv, vetor_Fx)
+                vetor_iteração_atual = np.array([u1_iteração_atual, u2_iteração_atual])
+                vetor_iteração_atualizado = vetor_iteração_atual - multplicação_matrizes
+                u1_iteração_atual = vetor_iteração_atualizado[0]
+                u2_iteração_atual = vetor_iteração_atualizado[1]
+            vetor_posição_u1.append(u1_iteração_atual)
+            vetor_veloc_angular_u2.append(u2_iteração_atual)
+            vetor_tempo.append(medidor_tempo)
+            medidor_tempo += h
+            contador += 1
 
-        for i in range(num_passos):
-            t_i = t[-1]
-            u_i = u[-1]
-
-            def f_i(u_prox):
-                return u_prox - u_i - h * self.f(u_prox, t_i + h)
-
-            def f_prime_i(u_prox):
-                return np.eye(2) - h * self.f_jac(u_prox, t_i + h)
-
-            u_prox = self.newton(f_i, u_i, f_prime_i)
-
-            t.append(t_i + h)
-            u.append(u_prox)
+            u = np.array([vetor_posição_u1, vetor_veloc_angular_u2])
+            t = np.array(vetor_tempo)
 
         return t, u
 
