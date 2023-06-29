@@ -67,11 +67,11 @@ class Metodos:
         # Plota os gráficos para cada método de resolução
         for i in self.metodos_dict.keys():
             # Plota o gráfico de velocidade versus tempo
-            self.plot_vel_pos(i)
+            # self.plot_vel_pos(i)
             # # Calcula e plota os erros para cada método
             # self.erros_metodos(self.metodos_dict[i], i)
             # # Plota o gráfico de fase
-            # self.plot_grafico_fase(self.metodos_dict[i], i)
+            self.plot_grafico_fase(self.metodos_dict[i], i)
 
         return
 
@@ -263,26 +263,13 @@ class Metodos:
         u = [u0]  # Lista para armazenar os valores de u
 
         # Inicialização usando o método de Euler explícito
-        t_i = t0
-        u_i = u0
-        f_i = self.f(u_i, t_i)
-        t_prox = t_i + h
-        u_prox_pred = u_i + h * f_i
-        t.append(t_prox)
-        u.append(u_prox_pred)
+        t.append(t[0] + h)
+        u.append(u[0] + h * self.f(u[0], t[0]))
 
         for i in range(2, num_passos + 1):
-            t_i = t_prox
-            u_i = u_prox_pred
-            f_i = self.f(u_i, t_i)
-
-            # Cálculo do próximo valor de t e u usando o método de Adams-Bashforth de ordem 2
-            t_prox = t_i + h
-            u_prox_pred = u_i + (h / 2) * (3 * f_i - self.f(u[i-1], t[i-1]))
-
             # Adição do próximo valor de t e u às listas
-            t.append(t_prox)
-            u.append(u_prox_pred)
+            t.append(t[i-1] + h)
+            u.append(u[i-1] + (h / 2) * (3 * self.f(u[i-1], t[i-1]) - self.f(u[i-2], t[i-2])))
 
         return t, u
 
