@@ -128,33 +128,6 @@ class Metodos:
 
         return jac
 
-    def f_jacobiano(self, u, t, h):
-        """
-        Define a função que retorna a matriz jacobiana da função f em relação às variáveis u1 e u2.
-
-        Args:
-            u (list or array): Lista ou array contendo os valores das variáveis u1 e u2.
-            t (float): Valor do parâmetro t.
-
-        Returns:
-            array: Array contendo a matriz jacobiana da função f em relação às variáveis u1 e u2.
-
-        Example:
-            >>> obj = MyClass()
-            >>> u = [0.5, 1.0]
-            >>> t = 0.0
-            >>> obj.f_jac(u, t)
-            array([[ 0.        ,  1.        ],
-                [-0.87758256,  0.        ]])
-        """
-        # Extrai os valores de u1 e u2 do vetor u
-        u1, u2 = u
-
-        # Define a matriz jacobiana
-        jac = np.array([[1, -h], [h*np.cos(u1), 1]])
-
-        return jac
-
     def sol_referencia(self, t, u):
         """
         Calcula a solução de referência do sistema de equações diferenciais.
@@ -333,17 +306,16 @@ class Metodos:
             t_i = t[-1]
             u_i = u[-1]
 
-            def f_i(u_prox):
-                return u_prox - u_i - h * self.f(u_prox, t_i + h)
-
-            def f_prime_i(u_prox):
-                return self.f_jacobiano(u_prox, t_i + h, h)
-
-            # Usando o método de Newton para encontrar u_{i+1}
-            u_proxx = newton(f_i, u_i)
+            un = u_i
+            # Método de Newton
+            for _ in range(6):
+                fx = un - u_i - h * self.f(un, t_i + h)
+                dfx = np.array([[1, -h], [h*np.cos(un[0]), 1]])
+                delta = solve(dfx, -fx)
+                un = un + delta
 
             t.append(t_i + h)
-            u.append(u_proxx)
+            u.append(un)
 
         return t, u
 
