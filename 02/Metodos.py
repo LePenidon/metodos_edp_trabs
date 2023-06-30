@@ -43,11 +43,14 @@ class Metodos:
         # Chama os métodos de resolução para cada um dos métodos
         self.t_euler_e, self.u_euler_e = self.euler_explicito(
             t0, u0, h, self.num_passos)
-        self.t_taylor_2, self.u_taylor_2 = self.taylor_2(t0, u0, h, self.num_passos)
-        self.t_AB_2, self.u_AB_2 = self.adams_bashforth2(t0, u0, h, self.num_passos)
+        self.t_taylor_2, self.u_taylor_2 = self.taylor_2(
+            t0, u0, h, self.num_passos)
+        self.t_AB_2, self.u_AB_2 = self.adams_bashforth2(
+            t0, u0, h, self.num_passos)
         self.t_euler_i, self.u_euler_i = self.euler_implicito(
             t0, u0, h, self.num_passos)
-        self.t_PC, self.u_PC = self.preditor_corretor(t0, u0, h, self.num_passos)
+        self.t_PC, self.u_PC = self.preditor_corretor(
+            t0, u0, h, self.num_passos)
 
         # Define um dicionário com os métodos de resolução
         self.metodos_dict = {
@@ -122,6 +125,33 @@ class Metodos:
 
         # Define a matriz jacobiana
         jac = np.array([[0, 1], [-np.cos(u1), 0]])
+
+        return jac
+
+    def f_jacobiano(self, u, t, h):
+        """
+        Define a função que retorna a matriz jacobiana da função f em relação às variáveis u1 e u2.
+
+        Args:
+            u (list or array): Lista ou array contendo os valores das variáveis u1 e u2.
+            t (float): Valor do parâmetro t.
+
+        Returns:
+            array: Array contendo a matriz jacobiana da função f em relação às variáveis u1 e u2.
+
+        Example:
+            >>> obj = MyClass()
+            >>> u = [0.5, 1.0]
+            >>> t = 0.0
+            >>> obj.f_jac(u, t)
+            array([[ 0.        ,  1.        ],
+                [-0.87758256,  0.        ]])
+        """
+        # Extrai os valores de u1 e u2 do vetor u
+        u1, u2 = u
+
+        # Define a matriz jacobiana
+        jac = np.array([[1, -h], [h*np.cos(u1), 1]])
 
         return jac
 
@@ -267,19 +297,19 @@ class Metodos:
         for i in range(2, num_passos + 1):
             # Adição do próximo valor de t e u às listas
             t.append(t[i-1] + h)
-            u.append(u[i-1] + (h / 2) * (3 * self.f(u[i-1], t[i-1]) - self.f(u[i-2], t[i-2])))
+            u.append(u[i-1] + (h / 2) *
+                     (3 * self.f(u[i-1], t[i-1]) - self.f(u[i-2], t[i-2])))
 
         return t, u
 
-    def newton(self, f, x0, f_prime, tol=1e-2, max_iter=50):
+    def newton(self, f, x0, f_prime, max_iter=6):
         x = x0
         for _ in range(max_iter):
             fx = f(x)
-            if np.linalg.norm(fx) < tol:
-                return x
             dfx = f_prime(x)
             x -= solve(dfx, fx)
-        raise ValueError("O método de Newton atingiu o número máximo de iterações sem convergir.")
+
+        return x
 
     def euler_implicito(self, t0, u0, h, num_passos):
         """
@@ -307,13 +337,13 @@ class Metodos:
                 return u_prox - u_i - h * self.f(u_prox, t_i + h)
 
             def f_prime_i(u_prox):
-                return np.eye(2) - h * self.f_jac(u_prox, t_i + h)
+                return self.f_jacobiano(u_prox, t_i + h, h)
 
             # Usando o método de Newton para encontrar u_{i+1}
-            u_prox = newton(f_i, u_i, f_prime_i)
+            u_proxx = newton(f_i, u_i)
 
             t.append(t_i + h)
-            u.append(u_prox)
+            u.append(u_proxx)
 
         return t, u
 
@@ -487,8 +517,10 @@ class Metodos:
             primeira_coluna_ref = [linha[0] for linha in u_ref]
             segunda_coluna_ref = [linha[1] for linha in u_ref]
 
-            error_u1 = self.calculate_error(primeira_coluna_ref, primeira_coluna_metodo)
-            error_u2 = self.calculate_error(segunda_coluna_ref, segunda_coluna_metodo)
+            error_u1 = self.calculate_error(
+                primeira_coluna_ref, primeira_coluna_metodo)
+            error_u2 = self.calculate_error(
+                segunda_coluna_ref, segunda_coluna_metodo)
 
             error_u1_list.append(error_u1)
             error_u2_list.append(error_u2)
