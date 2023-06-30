@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from scipy.special import ellipj  # type: ignore
 from scipy.special import ellipk  # type: ignore
 from scipy.linalg import solve
-from scipy.optimize import newton  # type: ignore
 import os
 import time
 
