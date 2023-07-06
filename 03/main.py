@@ -1,4 +1,4 @@
-from Metodos import *
+from Metodos import Metodos
 
 
 # Condições iniciais
@@ -13,15 +13,15 @@ lim_sum = 100
 # lim_t = 2
 # lim_sum = 1000
 
-metodos = Metodos(h, k, lim_t, lim_sum)
+m = Metodos(h, k, lim_t, lim_sum)
 
-metodos.plot_ref()
+m.plot_ref()
 
-metodos.plot_numerica(metodos.U_exp, 'U_exp', 'Solução numérica explícita')
-metodos.comparacao(metodos.U_exp, 'Explicito')
+m.plot_numerica(m.U_exp, 'U_exp', 'Solução numérica explícita')
+m.comparacao(m.U_exp, 'Explicito')
 
-metodos.plot_numerica(metodos.U_cn, 'U_cn', 'Solução Crank-Nicolson')
-metodos.comparacao(metodos.U_cn, 'Crank-Nicolson')
+m.plot_numerica(m.U_cn, 'U_cn', 'Solução Crank-Nicolson')
+m.comparacao(m.U_cn, 'Crank-Nicolson')
 
-metodos.erro_convergencia('Explicito')
-metodos.erro_convergencia('Crank-Nicolson')
+m.erro_convergencia('Explicito')
+m.erro_convergencia('Crank-Nicolson')
