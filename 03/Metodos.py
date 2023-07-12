@@ -21,7 +21,7 @@ class Metodos:
         self.pontos_t = int((t[1]-t[0])/k - 1)
 
         self.u_exp = self.explicito(x, t, h, k)
-        # self.u_crank = self.crank_nicolson()
+        self.u_crank = self.crank_nicolson(x, t, h, k)
 
         return
 
@@ -74,7 +74,11 @@ class Metodos:
 
         # A matriz da solução não contará com a borda do domínio
         m = int((x[1]-x[0])/h - 1)
-        m_linha = int((t[1]-t[0])/k - 1)
+
+        if (type(t) == list):
+            m_linha = int((t[1]-t[0])/k - 1)
+        else:
+            m_linha = int((t)/k - 1)
 
         T = np.zeros((m, m))
         for i in range(0, m - 1):
@@ -85,7 +89,6 @@ class Metodos:
         T[-1][-1] = 1 - 2*sigma
 
         U_0 = np.zeros((m, 1))
-
         for x in range(0, m):
             U_0[x][0] = np.sin(np.pi*x*self.h) + x*self.h*(1 - x*self.h)
 
@@ -94,7 +97,6 @@ class Metodos:
 
         # matriz coluna de 2
         m_2 = np.ones((m, 1))*2
-        self.imprime_matriz(m_2)
 
         for i in range(1, m_linha):
             aux = np.dot(T, U[i-1])
@@ -106,37 +108,38 @@ class Metodos:
 
         return U
 
-    def erro_explicito(self):
-        h = self.h
-        k = self.k
-        lim_t = self.lim_t
+    def calc_erro(self, x, t, h, k, U):
+        pontos_x = int((x[1]-x[0])/h - 1)
+        pontos_t = int((t[1]-t[0])/k - 1)
 
-        x = np.arange(h, 1, h)
-        t = np.arange(k, lim_t, k)
-        X, T = np.meshgrid(x, t)
+        x = np.arange(x[0], x[1], pontos_x)
+        t = np.arange(t[0], t[1], pontos_t)
 
-        erro = abs(self.u_analitica(X, T) - self.U_exp)
+        # X, T = np.meshgrid(x, t)
+        erro = abs(self.u_analitica(x, t) - U)
 
         return erro
 
-    def crank_nicolson(self):
-        h = self.h
-        k = self.k
-        lim_t = self.lim_t
-
+    def crank_nicolson(self, x, t, h, k):
         sigma = self.sigma
-
-        # A matriz da solução não contará com a borda do domínio
-        m = int(1/h - 1)
+        m = int((x[1]-x[0])/h - 1)
 
         # Condições para correção de erros ocorridos por problemas de arredondamento
         # de máquina para valores específicos de k utilizados na verificação da ordem de convergência
         if ((k == h) | (k == 0.5**2) | (k == 0.01**2)):
-            m_linha = int(lim_t/k - 2)
+            if (type(t) == list):
+                m_linha = int((t[1]-t[0])/k - 2)
+            else:
+                m_linha = int((t)/k - 2)
+
         else:
-            m_linha = int(lim_t/k - 1)
+            if (type(t) == list):
+                m_linha = int((t[1]-t[0])/k - 1)
+            else:
+                m_linha = int((t)/k - 1)
 
         T = np.zeros((m, m))
+
         for i in range(0, m - 1):
             T[i][i + 1] = -sigma/2
             T[i][i] = 1 + sigma
@@ -151,16 +154,13 @@ class Metodos:
         S[-1][-1] = 1 - sigma
 
         U_0 = np.zeros((m, 1))
-        for j in range(0, m):
-            if (j <= 1/(2*h)):
-                U_0[j][0] = 2*j*h
-            elif (j <= 1/h):
-                U_0[j][0] = 2 - 2*j*h
+        for x in range(0, m):
+            U_0[x][0] = np.sin(np.pi*x*self.h) + x*self.h*(1 - x*self.h)
 
         U = []
         U.append(U_0)
 
-        for i in range(1, m_linha + 1):
+        for i in range(1, m_linha):
             aux = np.dot(S, U[i - 1])
 
             aux2 = np.linalg.solve(T, aux)
@@ -170,18 +170,6 @@ class Metodos:
         U.shape = (U.shape[0], U.shape[1])
 
         return U
-
-    def erro_crank_nicolson(self):
-        h = self.h
-        lim_t = self.lim_t
-        k = self.k
-
-        x = np.arange(h, 1, h)
-        t = np.arange(k, lim_t, k)
-        X, T = np.meshgrid(x, t)
-        erro = abs(self.u_analitica(X, T) - self.U_crank)
-
-        return erro
 
     def plot_numerica(self, U, nome, titulo):
         x0 = self.dom_x[0]
@@ -213,18 +201,25 @@ class Metodos:
 
         plt.close()
 
-    def comparacao(self, x, t, h, k, nome):
-        x = np.linspace(self.dom_x[0], self.dom_x[1], self.pontos_x)
+    def comparacao(self, x, h, k, nome):
+        pontos_x = int((x[1]-x[0])/h - 1)
+        x_lin = np.linspace(x[0], x[1], pontos_x)
 
         t_values = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
 
         for i in t_values:
-            u_ref = self.u_analitica(x, i)
-            U = self.explicito(x, i, h, k)
+            u_ref = self.u_analitica(x_lin, i)
+
+            if (nome == 'Crank-Nicolson'):
+                U = self.crank_nicolson(x, i, h, k)
+            elif (nome == 'explicito'):
+                U = self.explicito(x, i, h, k)
 
             fig, ax = plt.subplots()
-            ax.plot(x, U)
-            ax.plot(x, u_ref)
+            ultima_linha = U[-1, :]
+
+            ax.plot(x_lin, ultima_linha)
+            ax.plot(x_lin, u_ref)
 
             plt.title("t = %.2f" % i)
             plt.xlabel('x')
@@ -241,20 +236,28 @@ class Metodos:
 
             plt.close()
 
-    def erro_convergencia(self, nome):
+    def erro_convergencia(self, x, t, nome):
         # Calculando a norma (2-norm) do erro para múltiplos valores de h e k
         erro = []
         valores_h = np.array([0.5, 0.1, 0.05, 0.01])
-        k = self.k
-        valores_k = (5/11)*(valores_h)**2
-        for h in [0.5, 0.1, 0.05, 0.01]:
+
+        if (nome == 'Explicito'):
+            valores_k = (5/11)*(valores_h)**2
+        elif (nome == 'Crank-Nicolson'):
+            valores_k = (5/11)*(valores_h)
+
+        for i in range(len(valores_h)):
             if (nome == 'Explicito'):
-                aux = self.erro_explicito()
+                U = self.explicito(x, t, valores_h[i], valores_k[i])
+                aux = self.calc_erro(x, t, valores_h[i], valores_k[i], U)
+
             elif (nome == 'Crank-Nicolson'):
-                aux = self.erro_crank_nicolson()
+                U = self.crank_nicolson(x, t, valores_h[i], valores_k[i])
+                aux = self.calc_erro(x, t, valores_h[i], valores_k[i], U)
 
             # Multiplicando a matriz pelos tamanhos dos passos  antes de calcular sua norma
-            aux = h*k*aux
+            aux = valores_h[i]*valores_k[i]*aux
+
             erro.append(np.linalg.norm(aux))
 
         valores_h = valores_h.tolist()
