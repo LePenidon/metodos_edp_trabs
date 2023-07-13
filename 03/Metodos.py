@@ -47,11 +47,12 @@ class Metodos:
         fig = plt.figure(figsize=(10, 10))
         ax = plt.axes(projection='3d')
 
-        ax.view_init(30, 45)
-
         self.u_ref = self.u_analitica(X, T)
 
-        ax.plot_surface(X, T, self.u_ref, cmap='cividis')
+        # Plotando gráfico de superfície
+        surf = ax.plot_surface(X, T, self.u_ref, cmap=plt.cm.ocean)
+
+        fig.colorbar(surf)
 
         ax.view_init(30, 45)
         ax.set_xlabel('X')
@@ -185,7 +186,8 @@ class Metodos:
         fig = plt.figure(figsize=(10, 10))
         ax = plt.axes(projection='3d')
 
-        ax.plot_surface(X, T, U, cmap='cividis')
+        surf = ax.plot_surface(X, T, U, cmap=plt.cm.ocean)
+        fig.colorbar(surf)
 
         ax.view_init(30, 45)
         ax.set_xlabel('X')
@@ -218,16 +220,22 @@ class Metodos:
             fig, ax = plt.subplots()
             ultima_linha = U[-1, :]
 
-            ax.plot(x_lin, ultima_linha)
-            ax.plot(x_lin, u_ref)
+            plt.figure(figsize=(10, 7))
+            plt.xlabel("x", fontdict={"fontsize": 14, "fontweight": "bold"})
+            plt.ylabel("u", fontdict={"fontsize": 14, "fontweight": "bold"})
+            plt.title(
+                "X/U - Método: " + nome, fontdict={"fontsize": 16, "fontweight": "bold"}
+            )
 
-            plt.title("t = %.2f" % i)
-            plt.xlabel('x')
-            plt.ylabel('u')
+            plt.plot(x_lin, ultima_linha, color="blue", label="Solução numérica")
+            plt.plot(x_lin, u_ref, "--", color="red", label="Solução analítica")
 
             ax.set_xlim([self.dom_x[0], self.dom_x[1]])
             ax.set_ylim([self.dom_t[0], self.dom_t[1]])
-            plt.legend(['Solução numérica', 'Solução analítica'])
+
+            plt.grid(linestyle='--')
+
+            plt.legend()
 
             # Salvar o gráfico como uma imagem
             if not os.path.exists('resultados/comparacoes_'+nome):
@@ -266,23 +274,47 @@ class Metodos:
         # Tabela dos valores para a análise da convergência
         analise_conv = pd.DataFrame({'h': valores_h, 'k': valores_k, 'erro': erro})
 
-        # Plotando figuras de convergência
-        analise_conv.plot.line(x='h', y='erro', loglog=True, legend=False, figsize=(8, 8), color='red')
-        plt.ylabel('erro')
+        # =================
 
-        # Salvar o gráfico como uma imagem
+        plt.figure(figsize=(10, 7))
+        plt.xlabel("h", fontdict={"fontsize": 14, "fontweight": "bold"})
+        plt.ylabel("erro", fontdict={"fontsize": 14, "fontweight": "bold"})
+        plt.title(
+            "Erro x: " + nome, fontdict={"fontsize": 16, "fontweight": "bold"}
+        )
+
+        plt.grid(linestyle='--')
+
+        plt.plot(valores_h, erro, color="blue")
+
+        # # Salvar o gráfico como uma imagem
         if not os.path.exists('resultados/convergencia'):
             os.makedirs('resultados/convergencia')
         plt.savefig('resultados/convergencia/conv_' + nome + '_h.png')
 
-        analise_conv.plot.line(x='k', y='erro', loglog=True, legend=False, figsize=(8, 8), color='red')
-        plt.ylabel('erro')
+        plt.close()
 
+        # =============
+
+        plt.figure(figsize=(10, 7))
+        plt.xlabel("k", fontdict={"fontsize": 14, "fontweight": "bold"})
+        plt.ylabel("erro", fontdict={"fontsize": 14, "fontweight": "bold"})
+        plt.title(
+            "Erro k: " + nome, fontdict={"fontsize": 16, "fontweight": "bold"}
+        )
+
+        plt.grid(linestyle='--')
+
+        plt.plot(valores_k, erro, color="blue")
+
+        # # Salvar o gráfico como uma imagem
         if not os.path.exists('resultados/convergencia'):
             os.makedirs('resultados/convergencia')
         plt.savefig('resultados/convergencia/conv_' + nome + '_k.png')
 
+        plt.close()
     # Imprime a matriz em um arquivo txt
+
     def imprime_matriz(self, A):
         format = "%.0f"
 
