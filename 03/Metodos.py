@@ -90,8 +90,12 @@ class Metodos:
         T[-1][-1] = 1 - 2*sigma
 
         U_0 = np.zeros((m, 1))
-        for x in range(0, m):
-            U_0[x][0] = np.sin(np.pi*x*self.h) + x*self.h*(1 - x*self.h)
+
+        x_lin = np.linspace(x[0], x[1], m)
+        U_0[:, 0] = np.sin(np.pi*x_lin) + x_lin*(1 - x_lin)
+
+        # for x in range(0, m):
+        #     U_0[x][0] = np.sin(np.pi*x*self.h) + x*self.h*(1 - x*self.h)
 
         U = []
         U.append(U_0)
@@ -101,7 +105,7 @@ class Metodos:
 
         for i in range(1, m_linha):
             aux = np.dot(T, U[i-1])
-            # aux = aux + m_2
+            aux = aux + m_2*k
             U.append(aux)
 
         U = np.array(U)
@@ -155,16 +159,25 @@ class Metodos:
         S[-1][-1] = 1 - sigma
 
         U_0 = np.zeros((m, 1))
-        for x in range(0, m):
-            U_0[x][0] = np.sin(np.pi*x*self.h) + x*self.h*(1 - x*self.h)
+
+        x_lin = np.linspace(x[0], x[1], m)
+        U_0[:, 0] = np.sin(np.pi*x_lin) + x_lin*(1 - x_lin)
+
+        # for x in range(0, m):
+        #     U_0[x][0] = np.sin(np.pi*x*self.h) + x*self.h*(1 - x*self.h)
 
         U = []
         U.append(U_0)
+
+        # matriz coluna de 2
+        m_2 = np.ones((m, 1))*2
 
         for i in range(1, m_linha):
             aux = np.dot(S, U[i - 1])
 
             aux2 = np.linalg.solve(T, aux)
+
+            aux2 = aux2 + m_2*k
             U.append(aux2)
 
         U = np.array(U)
@@ -200,7 +213,6 @@ class Metodos:
         if not os.path.exists('resultados/solucao_numerica'):
             os.makedirs('resultados/solucao_numerica')
         plt.savefig('resultados/solucao_numerica/' + nome + '.png')
-
         plt.close()
 
     def comparacao(self, x, h, k, nome):
