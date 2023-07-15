@@ -216,45 +216,38 @@ class Metodos:
         plt.close()
 
     def comparacao(self, x, h, k, nome):
-        pontos_x = int((x[1]-x[0])/h - 1)
+        pontos_x = int((x[1] - x[0]) / h - 1)
         x_lin = np.linspace(x[0], x[1], pontos_x)
 
         t_values = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
 
-        for i in t_values:
-            u_ref = self.u_analitica(x_lin, i)
+        plt.figure(figsize=(10, 7))
+        plt.xlabel("x", fontdict={"fontsize": 14, "fontweight": "bold"})
+        plt.ylabel("u", fontdict={"fontsize": 14, "fontweight": "bold"})
+        plt.title("X/U - Método: " + nome, fontdict={"fontsize": 16, "fontweight": "bold"})
 
-            if (nome == 'Crank-Nicolson'):
+        for i in t_values:
+
+            if nome == 'Crank-Nicolson':
                 U = self.crank_nicolson(x, i, h, k)
-            elif (nome == 'explicito'):
+            elif nome == 'explicito':
                 U = self.explicito(x, i, h, k)
 
-            fig, ax = plt.subplots()
             ultima_linha = U[-1, :]
+            plt.plot(x_lin, ultima_linha, label='t = {:.2f}'.format(i))
 
-            plt.figure(figsize=(10, 7))
-            plt.xlabel("x", fontdict={"fontsize": 14, "fontweight": "bold"})
-            plt.ylabel("u", fontdict={"fontsize": 14, "fontweight": "bold"})
-            plt.title(
-                "X/U - Método: " + nome, fontdict={"fontsize": 16, "fontweight": "bold"}
-            )
+        plt.xlim([x[0], x[1]])
+        plt.ylim([0, 1])  # Ajuste o intervalo y conforme necessário
 
-            plt.plot(x_lin, ultima_linha, color="blue", label="Solução numérica")
-            plt.plot(x_lin, u_ref, "--", color="red", label="Solução analítica")
+        plt.grid(linestyle='--')
+        plt.legend()
 
-            ax.set_xlim([self.dom_x[0], self.dom_x[1]])
-            ax.set_ylim([self.dom_t[0], self.dom_t[1]])
+        # Salvar o gráfico como uma imagem
+        if not os.path.exists('resultados/comparacoes'):
+            os.makedirs('resultados/comparacoes')
+        plt.savefig('resultados/comparacoes/' + f'{nome}.png')
 
-            plt.grid(linestyle='--')
-
-            plt.legend()
-
-            # Salvar o gráfico como uma imagem
-            if not os.path.exists('resultados/comparacoes_'+nome):
-                os.makedirs('resultados/comparacoes_'+nome)
-            plt.savefig('resultados/comparacoes_'+nome + '/t_' + str(i) + '.png')
-
-            plt.close()
+        plt.close()
 
     def erro_convergencia(self, x, t, nome):
         # Calculando a norma (2-norm) do erro para múltiplos valores de h e k

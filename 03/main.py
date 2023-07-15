@@ -17,11 +17,11 @@ m = Metodos(h, k, dom_x, dom_t)
 
 m.plot_ref()
 
-m.plot_numerica(m.u_exp, 'explicito', 'Método Explícito')
+# m.plot_numerica(m.u_exp, 'explicito', 'Método Explícito')
 m.comparacao(dom_x, h, k, 'explicito')
 
-m.plot_numerica(m.u_crank, 'crank_nicolson', 'Crank-Nicolson')
+# m.plot_numerica(m.u_crank, 'crank_nicolson', 'Crank-Nicolson')
 m.comparacao(dom_x, h, k, 'Crank-Nicolson')
 
-m.erro_convergencia(dom_x, dom_t, 'Explicito')
-m.erro_convergencia(dom_x, dom_t, 'Crank-Nicolson')
+# m.erro_convergencia(dom_x, dom_t, 'Explicito')
+# m.erro_convergencia(dom_x, dom_t, 'Crank-Nicolson')
