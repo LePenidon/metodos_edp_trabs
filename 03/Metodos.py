@@ -146,8 +146,9 @@ class Metodos:
             m_linha = int(t / k - 1)
 
         # Cria a matriz tridiagonal T
-        T = np.zeros((m, m))
-        for i in range(0, m - 1):
+        T = np.zeros((m+2, m+2))
+
+        for i in range(1, m):
             T[i][i + 1] = sigma
             T[i][i] = 1 - 2 * sigma
             T[i + 1][i] = sigma
@@ -155,15 +156,19 @@ class Metodos:
         T[-1][-1] = 1 - 2 * sigma
 
         # Condição inicial U_0
-        U_0 = np.zeros((m, 1))
-        x_lin = np.linspace(x[0], x[1], m)
+        U_0 = np.zeros((m+2, 1))
+
+        x_lin = np.linspace(x[0], x[1], m+2)
         U_0[:, 0] = np.sin(np.pi * x_lin) + x_lin * (1 - x_lin)
+
+        U_0[0, 0] = 0
+        U_0[-1, 0] = 0
 
         U = []
         U.append(U_0)
 
         # matriz coluna de 2
-        m_2 = np.ones((m, 1)) * 2
+        m_2 = np.ones((m+2, 1)) * 2
 
         # Iteração para calcular a solução em cada passo de tempo
         for i in range(1, m_linha):
@@ -247,37 +252,42 @@ class Metodos:
                 m_linha = int((t) / k - 1)
 
         # Matrizes T e S usadas no método de Crank-Nicolson
-        T = np.zeros((m, m))
-        S = np.zeros((m, m))
+        T = np.zeros((m+2, m+2))
+        S = np.zeros((m+2, m+2))
 
-        for i in range(0, m - 1):
+        for i in range(0, m+1):
             T[i][i + 1] = -sigma / 2
             T[i][i] = 1 + sigma
             T[i + 1][i] = -sigma / 2
         T[-1][-1] = 1 + sigma
 
-        for i in range(0, m - 1):
+        for i in range(0, m+1):
             S[i][i + 1] = sigma / 2
             S[i][i] = 1 - sigma
             S[i + 1][i] = sigma / 2
         S[-1][-1] = 1 - sigma
 
         # Condição inicial U_0
-        U_0 = np.zeros((m, 1))
-        x_lin = np.linspace(x[0], x[1], m)
+        U_0 = np.zeros((m+2, 1))
+        x_lin = np.linspace(x[0], x[1], m+2)
         U_0[:, 0] = np.sin(np.pi * x_lin) + x_lin * (1 - x_lin)
 
         U = []
         U.append(U_0)
 
         # matriz coluna de 2
-        m_2 = np.ones((m, 1)) * 2
+        m_2 = np.ones((m+2, 1)) * 2
 
         # Iteração para calcular a solução em cada passo de tempo
         for i in range(1, m_linha):
-            aux = np.dot(S, U[i - 1])
+            aux = np.dot(S, U[i-1])
             aux2 = np.linalg.solve(T, aux)
+
             aux2 = aux2 + m_2 * k
+
+            aux2[0][0] = 0
+            aux2[-1][0] = 0
+
             U.append(aux2)
 
         U = np.array(U)
@@ -308,7 +318,7 @@ class Metodos:
         tf = self.dom_t[1]
 
         # Criando os vetores de coordenadas para o gráfico
-        x = np.linspace(x0, xf, self.pontos_x)
+        x = np.linspace(x0, xf, self.pontos_x+2)
         t = np.linspace(t0, tf, self.pontos_t)
 
         X, T = np.meshgrid(x, t)
@@ -353,7 +363,7 @@ class Metodos:
             >>> m.comparacao(dom_x, h, k, 'explicito')
         """
         pontos_x = int((x[1] - x[0]) / h - 1)
-        x_lin = np.linspace(x[0], x[1], pontos_x)
+        x_lin = np.linspace(x[0], x[1], pontos_x+2)
 
         # Valores de tempo para comparação
         t_values = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
